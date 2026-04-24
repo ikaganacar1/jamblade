@@ -13,16 +13,17 @@ class LobbyScene extends Phaser.Scene {
 
     // ── BACKGROUND ──────────────────────────────────────
     var bg = this.add.graphics();
-    bg.fillGradientStyle(0xFFAA00, 0xFFAA00, 0xFFD786, 0xFFD786, 1);
+    bg.fillGradientStyle(0x173a8b, 0x173a8b , 0xFFCEE3 ,0xFFCEE3 , 1);
+    
     bg.fillRect(0, 0, w, h);
 
     // Divider line
-    this.add.graphics().lineStyle(2, 0xcc7700, 0.5).lineBetween(400, 0, 400, h);
+    this.add.graphics().lineStyle(2, 0xFF85BB, 0.5).lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
     this.add.text(14, 10, 'JamBlade', {
-      fontFamily: font, fontSize: '30px', color: '#FF85BB',
-      fontStyle: 'bold', stroke: '#021A54', strokeThickness: 3,
+      fontFamily: 'JapanBrush', fontSize: '38px', color: '#FF85BB',
+      stroke: '#021A54', strokeThickness: 3,
     });
 
     var listBg = this.add.graphics();
@@ -30,11 +31,11 @@ class LobbyScene extends Phaser.Scene {
     listBg.fillRoundedRect(8, 50, 385, 275, 8);
 
     this.playerListTitle = this.add.text(200, 56, 'Oyuncular', {
-      fontFamily: font, fontSize: '12px', color: '#ffddaa', fontStyle: 'bold',
+      fontFamily: font, fontSize: '12px', color: '#FF85BB', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
     this.playerListText = this.add.text(200, 74, 'Bağlanılıyor...', {
-      fontFamily: font, fontSize: '11px', color: '#fff0cc',
+      fontFamily: font, fontSize: '11px', color: '#FF85BB',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
 
@@ -46,19 +47,19 @@ class LobbyScene extends Phaser.Scene {
     var rx = 415;
 
     this.add.text(rx, 10, 'İsmin:', {
-      fontFamily: font, fontSize: '10px', color: '#7a3300', fontStyle: 'bold',
+      fontFamily: font, fontSize: '10px', color: '#FF85BB', fontStyle: 'bold',
     });
 
     var names = CONSTANTS.PLAYER_NAMES;
     this.playerName = names[Math.floor(Math.random() * names.length)];
 
     this.nameTag = this.add.text(rx, 24, this.playerName, {
-      fontFamily: font, fontSize: '20px', color: '#3a1500', fontStyle: 'bold',
+      fontFamily: font, fontSize: '20px', color: '#FF85BB', fontStyle: 'bold',
       backgroundColor: '#00000018', padding: { x: 14, y: 6 },
     }).setInteractive({ useHandCursor: true });
 
     this.add.text(rx, 58, 'değiştirmek için tıkla', {
-      fontFamily: font, fontSize: '9px', color: '#aa6600',
+      fontFamily: font, fontSize: '9px', color: '#FF85BB',
     });
 
     this.nameTag.on('pointerdown', function() {
@@ -70,7 +71,7 @@ class LobbyScene extends Phaser.Scene {
     // ── READY BUTTON ────────────────────────────────────
     this.isReady = false;
     this.readyBtn = this.add.text(606, h - 38, 'HAZIR DEĞİL', {
-      fontFamily: font, fontSize: '17px', color: '#ffddaa', fontStyle: 'bold',
+      fontFamily: font, fontSize: '17px', color: '#FF85BB', fontStyle: 'bold',
       backgroundColor: '#7a2200', padding: { x: 28, y: 10 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
@@ -78,7 +79,7 @@ class LobbyScene extends Phaser.Scene {
       self.isReady = !self.isReady;
       self.readyBtn.setText(self.isReady ? '✓ HAZIR' : 'HAZIR DEĞİL');
       self.readyBtn.setStyle({
-        color: self.isReady ? '#00ff88' : '#ffddaa',
+        color: self.isReady ? '#00ff88' : '#FF85BB',
         backgroundColor: self.isReady ? '#0a4422' : '#7a2200',
       });
       window.network.emit('ready', { ready: self.isReady });
@@ -106,15 +107,15 @@ class LobbyScene extends Phaser.Scene {
     }).setOrigin(0.5).setAlpha(0);
 
     this.backToPlayerBtn = this.add.text(606, h - 78, 'OYUNCU OL', {
-      fontFamily: font, fontSize: '14px', color: '#ffddaa', fontStyle: 'bold',
-      backgroundColor: '#552200', padding: { x: 20, y: 8 },
+      fontFamily: font, fontSize: '14px', color: '#FF85BB', fontStyle: 'bold',
+      backgroundColor: '#ff3791', padding: { x: 20, y: 8 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true }).setAlpha(0);
 
     this.backToPlayerBtn.on('pointerdown', function() {
       if (!self.isSpectator) return;
       self.isSpectator = false;
       self.isReady = false;
-      self.readyBtn.setVisible(true).setText('HAZIR DEĞİL').setStyle({ color: '#ffddaa', backgroundColor: '#7a2200' });
+      self.readyBtn.setVisible(true).setText('HAZIR VER').setStyle({ color: '#FF85BB', backgroundColor: '#ffe0d4' });
       self.spectatorBtn.setAlpha(1).setInteractive({ useHandCursor: true });
       self.spectatorStatusText.setAlpha(0);
       self.backToPlayerBtn.setAlpha(0);
