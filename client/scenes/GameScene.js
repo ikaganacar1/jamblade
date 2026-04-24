@@ -10,17 +10,20 @@ class GameScene extends Phaser.Scene {
   create() {
     var myId = window.network.id;
     var self = this;
+    var sw = this.cameras.main.width;
+    var sh = this.cameras.main.height;
 
+    // ── World camera (zoomed out to fit map) ──────────────────────
     var imgAspect = 2412 / 1760;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
-    var zoom = Math.min(this.cameras.main.width / displayW, this.cameras.main.height / displayH);
-    this.cameras.main.setZoom(zoom);
+    this._zoom = Math.min(sw / displayW, sh / displayH);
+    this.cameras.main.setZoom(this._zoom);
     this.cameras.main.centerOn(0, 0);
 
     this.drawMap();
 
-    // ── Launcher placeholders (world space, below players) ────────
+    // Launcher placeholders (world space)
     this.launcherPositions = {};
     for (var id in this.gameData.players) {
       var p0 = this.gameData.players[id];
@@ -31,78 +34,67 @@ class GameScene extends Phaser.Scene {
       lg.lineStyle(4, 0x3399ff, 1);
       lg.fillRoundedRect(p0.x - lw / 2, p0.y - lh / 2, lw, lh, 14);
       lg.strokeRoundedRect(p0.x - lw / 2, p0.y - lh / 2, lw, lh, 14);
-      // Corner accents
-      lg.lineStyle(2, 0x66ccff, 0.6);
+      lg.lineStyle(2, 0x66ccff, 0.5);
       lg.strokeRect(p0.x - lw / 2 + 8, p0.y - lh / 2 + 8, lw - 16, lh - 16);
     }
 
-    // Player sprites
+    // Player sprites (world space)
     this.playerSprites = {};
     for (var id2 in this.gameData.players) {
       this.createPlayerSprite(id2, this.gameData.players[id2]);
     }
 
-    this.joystick = new VirtualJoystick(this);
-
-    // ── Aim arrow (world space, updated each frame) ───────────────
+    // Aim arrow (world space, updated each frame)
     this.aimArrow = this.add.graphics().setDepth(90);
 
-    // ── Power bar (HUD) ───────────────────────────────────────────
+    // World-space power bar (drawn near MY launcher)
+    this.worldBarG = this.add.graphics().setDepth(95);
+
+    // ── UI camera (zoom=1, screen-space HUD) ──────────────────────
+    var worldObjs = this.children.list.slice();
+    this.uiCam = this.cameras.add(0, 0, sw, sh).setName('ui');
+    this.uiCam.ignore(worldObjs);
+
+    // Joystick (screen space — only uiCam renders it)
+    this.joystick = new VirtualJoystick(this);
+
+    // Timer HUD (screen space)
     var hf = 'Fredoka, sans-serif';
-    var sw = this.cameras.main.width;
-    var sh = this.cameras.main.height;
+    this.timerText = this.add.text(10, 10, '', {
+      fontFamily: hf, fontSize: '20px', color: '#FF85BB',
+      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 }, fontStyle: 'bold',
+    });
 
-    // Bar dimensions relative to screen
-    this._bar = {
-      w: 38,
-      h: Math.round(sh * 0.58),
-      x: sw - 56,
-      y: Math.round(sh * 0.18),
-    };
-    var b = this._bar;
-    var bcx = b.x + b.w / 2; // center x of bar
+    // Main camera ignores all UI objects
+    var uiObjs = this.children.list.filter(function(c) { return worldObjs.indexOf(c) === -1; });
+    this.cameras.main.ignore(uiObjs);
 
-    this.powerBarG = this.add.graphics().setScrollFactor(0).setDepth(1001);
-    this.powerBarLabelTop = this.add.text(bcx, b.y - 6, 'GÜÇ', {
-      fontFamily: hf, fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
-    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(1002);
-    this.powerBarLabelBot = this.add.text(bcx, b.y + b.h + 6, 'TIKLA!', {
-      fontFamily: hf, fontSize: '13px', color: '#aaddff', fontStyle: 'bold',
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1002);
-
+    // ── Launch state ───────────────────────────────────────────────
     this.myLaunching = true;
     this.barProgress = 0;
     this.barDir = 1;
 
-    // Tap right half → launch
+    // Store my name for win screen
+    var myData = this.gameData.players[myId];
+    if (myData) window._myName = myData.name;
+
+    // Tap RIGHT half (not joystick side) to launch
     this.input.on('pointerdown', function(ptr) {
       if (!self.myLaunching) return;
-      if (ptr.x < self.cameras.main.width * 0.5) return; // left = joystick
-      window.network.emit('launch', {
-        speed: self.barProgress,
-        angle: self.joystick.angle,
-      });
+      if (ptr.x < sw * 0.5) return;
+      window.network.emit('launch', { speed: self.barProgress, angle: self.joystick.angle });
       self.myLaunching = false;
-      self.powerBarG.clear();
-      self.powerBarLabelTop.setAlpha(0);
-      self.powerBarLabelBot.setAlpha(0);
+      self.worldBarG.clear();
       self.aimArrow.clear();
     });
 
-    // ── HUD ───────────────────────────────────────────────────────
-    this.timerText = this.add.text(10, 10, '', {
-      fontFamily: hf, fontSize: '20px', color: '#FF85BB',
-      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 }, fontStyle: 'bold',
-    }).setScrollFactor(0).setDepth(999);
-
-    // Input send
+    // Input ticker
     this.inputTimer = this.time.addEvent({
       delay: CONSTANTS.TICK_INTERVAL,
       callback: function() {
         window.network.emit('input', { angle: this.joystick.angle, moving: this.joystick.moving });
       },
-      callbackScope: this,
-      loop: true,
+      callbackScope: this, loop: true,
     });
 
     this.latestState = null;
@@ -115,10 +107,6 @@ class GameScene extends Phaser.Scene {
       this.stateTime = 0;
     }.bind(this));
 
-    // Store my name so ResultScene can detect if I won
-    var myData = this.gameData.players[myId];
-    if (myData) window._myName = myData.name;
-
     window.network.on('game:end', function(data) {
       this.joystick.destroy();
       this.scene.start('Result', data);
@@ -128,28 +116,36 @@ class GameScene extends Phaser.Scene {
   update(time, delta) {
     var myId = window.network.id;
 
-    // ── Power bar + aim arrow (while waiting to launch) ──────────
+    // ── Launch phase: power bar + aim arrow in WORLD space ────────
     if (this.myLaunching) {
       this.barProgress += this.barDir * delta / 750;
       if (this.barProgress >= 1) { this.barProgress = 1; this.barDir = -1; }
       if (this.barProgress <= 0) { this.barProgress = 0; this.barDir = 1; }
-      this.drawPowerBar(this.barProgress);
 
-      var mySpawn = this.launcherPositions[myId];
-      if (mySpawn) {
+      var spawn = this.launcherPositions[myId];
+      if (spawn) {
+        // Aim arrow
         var ang = this.joystick.angle;
-        var arrowLen = 220;
-        var ax = mySpawn.x + Math.cos(ang) * arrowLen;
-        var ay = mySpawn.y + Math.sin(ang) * arrowLen;
+        var aLen = 260;
+        var ax = spawn.x + Math.cos(ang) * aLen;
+        var ay = spawn.y + Math.sin(ang) * aLen;
         this.aimArrow.clear();
-        this.aimArrow.lineStyle(10, 0xffee00, 0.9);
-        this.aimArrow.lineBetween(mySpawn.x, mySpawn.y, ax, ay);
+        this.aimArrow.lineStyle(35, 0xffee00, 0.9);
+        this.aimArrow.lineBetween(spawn.x, spawn.y, ax, ay);
         this.aimArrow.fillStyle(0xffee00, 0.9);
         this.aimArrow.fillTriangle(
           ax, ay,
-          ax - Math.cos(ang - 0.45) * 50, ay - Math.sin(ang - 0.45) * 50,
-          ax - Math.cos(ang + 0.45) * 50, ay - Math.sin(ang + 0.45) * 50
+          ax - Math.cos(ang - 0.42) * 70, ay - Math.sin(ang - 0.42) * 70,
+          ax - Math.cos(ang + 0.42) * 70, ay - Math.sin(ang + 0.42) * 70
         );
+
+        // Power bar in world space — offset toward center from launcher
+        var len = Math.sqrt(spawn.x * spawn.x + spawn.y * spawn.y) || 1;
+        var nx = spawn.x / len, ny = spawn.y / len; // outward normal
+        var barCx = spawn.x - nx * 200; // 200 units toward center
+        var barCy = spawn.y - ny * 200;
+        var bw = 90, bh = 500;
+        this.drawWorldBar(barCx, barCy, bw, bh, this.barProgress);
       }
     }
 
@@ -178,7 +174,6 @@ class GameScene extends Phaser.Scene {
         spr.container.y += (p.y - spr.container.y) * 0.2;
       }
 
-      // Spin active players; fade out eliminated
       if (p.state === 'active') {
         spr.localRotation = (spr.localRotation || 0) + (p.spinSpeed / 100) * 18 * (delta / 1000);
         spr.sprite.rotation = spr.localRotation;
@@ -190,7 +185,6 @@ class GameScene extends Phaser.Scene {
       spr.nameLabel.setText(p.name);
     }
 
-    // Remove disconnected players
     for (var pid in this.playerSprites) {
       if (!state.players[pid]) {
         this.playerSprites[pid].container.destroy();
@@ -199,33 +193,32 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  drawPowerBar(progress) {
-    var g = this.powerBarG;
+  drawWorldBar(cx, cy, bw, bh, progress) {
+    var g = this.worldBarG;
     g.clear();
-    var bx = this._bar.x, by = this._bar.y, bw = this._bar.w, bh = this._bar.h;
 
-    // Dark background
+    // Background
     g.fillStyle(0x000000, 0.75);
-    g.fillRoundedRect(bx - 5, by - 4, bw + 10, bh + 8, 7);
+    g.fillRoundedRect(cx - bw / 2 - 8, cy - bh / 2 - 8, bw + 16, bh + 16, 12);
 
-    // Gradient strips: red (bottom) → green (top)
-    var strips = 22;
-    var stripH = bh / strips;
+    // Gradient strips (red bottom → green top)
+    var strips = 20;
+    var sh = bh / strips;
     for (var i = 0; i < strips; i++) {
       var t = i / (strips - 1);
       var r = Math.floor(220 * (1 - t));
-      var gr = Math.floor(210 * t);
-      g.fillStyle((r << 16) | (gr << 8) | 20, 1);
-      g.fillRect(bx, by + bh - (i + 1) * stripH, bw, stripH + 1);
+      var gr = Math.floor(200 * t);
+      g.fillStyle((r << 16) | (gr << 8) | 10, 1);
+      g.fillRect(cx - bw / 2, cy + bh / 2 - (i + 1) * sh, bw, sh + 1);
     }
 
-    // Moving pointer line + side triangles
-    var py = by + bh - progress * bh;
-    g.lineStyle(4, 0xffffff, 1);
-    g.lineBetween(bx - 4, py, bx + bw + 4, py);
+    // Pointer line
+    var py = cy + bh / 2 - progress * bh;
+    g.lineStyle(18, 0xffffff, 1);
+    g.lineBetween(cx - bw / 2 - 6, py, cx + bw / 2 + 6, py);
     g.fillStyle(0xffffff, 1);
-    g.fillTriangle(bx - 4, py, bx - 14, py - 8, bx - 14, py + 8);
-    g.fillTriangle(bx + bw + 4, py, bx + bw + 14, py - 8, bx + bw + 14, py + 8);
+    g.fillTriangle(cx - bw / 2 - 6, py, cx - bw / 2 - 30, py - 18, cx - bw / 2 - 30, py + 18);
+    g.fillTriangle(cx + bw / 2 + 6, py, cx + bw / 2 + 30, py - 18, cx + bw / 2 + 30, py + 18);
   }
 
   createPlayerSprite(id, data) {
@@ -235,12 +228,17 @@ class GameScene extends Phaser.Scene {
     shadow.fillStyle(0x000000, 0.3);
     shadow.fillEllipse(size * 0.15, size * 0.35, size * 0.9, size * 0.28);
     var sprite = this.add.image(0, 0, 'player').setDisplaySize(size, size);
-    var nameLabel = this.add.text(0, -(size * 0.6), data.name || '', {
-      fontSize: '20px', color: '#ffffff',
-      backgroundColor: '#00000088', padding: { x: 4, y: 2 },
+    var nameLabel = this.add.text(0, -(size * 0.65), data.name || '', {
+      fontFamily: 'Fredoka, sans-serif',
+      fontSize: Math.round(size * 0.38) + 'px',
+      color: '#ffffff', backgroundColor: '#00000099',
+      padding: { x: 8, y: 3 },
     }).setOrigin(0.5);
     container.add([shadow, sprite, nameLabel]);
     container.setDepth(100);
+
+    // Tell uiCam to ignore this container (it's a world object)
+    if (this.uiCam) this.uiCam.ignore(container);
 
     this.playerSprites[id] = { container, sprite, nameLabel, localRotation: 0 };
     return this.playerSprites[id];

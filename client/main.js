@@ -6,7 +6,7 @@ try {
 var config = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  resolution: window.devicePixelRatio || 1,
+  input: { activePointers: 3 },
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
