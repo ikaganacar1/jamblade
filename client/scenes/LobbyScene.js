@@ -9,7 +9,6 @@ class LobbyScene extends Phaser.Scene {
     var font = 'Fredoka, sans-serif';
     var self = this;
 
-    this.myTeam = null;
     this.mySkin = -1;
     this.hunterCount = 0;
     this.runnerCount = 0;
@@ -26,15 +25,15 @@ class LobbyScene extends Phaser.Scene {
     div.lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
-    this.add.text(14, 10, 'Prison Quack', {
-      fontFamily: font, fontSize: '30px', color: '#FF5F00',
-      fontStyle: 'bold', stroke: '#000000', strokeThickness: 3,
+    this.add.text(14, 10, 'JamBlade', {
+      fontFamily: font, fontSize: '30px', color: '#FF85BB',
+      fontStyle: 'bold', stroke: '#021A54', strokeThickness: 3,
     });
     this.add.text(14, 42, 'Sakın Yakalanma!', {
       fontFamily: font, fontSize: '11px', color: '#7a3300',
     });
 
-    // Team count header
+    // Team count header (Kept in case server still tracks teams)
     this.teamHeader = this.add.text(200, 62, '', {
       fontFamily: font, fontSize: '13px', color: '#3a1500', align: 'center',
     }).setOrigin(0.5, 0);
@@ -52,27 +51,6 @@ class LobbyScene extends Phaser.Scene {
       fontFamily: font, fontSize: '11px', color: '#fff0cc',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
-
-    // ── TEAM JOIN BUTTONS (below player list) ──────────
-    this.hunterBtn = this.add.text(103, h - 38, 'KOVALAYAN', {
-      fontFamily: font, fontSize: '15px', fontStyle: 'bold',
-      color: '#ffffff', backgroundColor: '#aa2200',
-      padding: { x: 18, y: 10 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    this.runnerBtn = this.add.text(297, h - 38, 'KAÇAN', {
-      fontFamily: font, fontSize: '15px', fontStyle: 'bold',
-      color: '#ffffff', backgroundColor: '#1a5500',
-      padding: { x: 18, y: 10 },
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    this.hunterBtn.on('pointerover', function() { if (!self._hunterFull) self.hunterBtn.setAlpha(0.8); });
-    this.hunterBtn.on('pointerout', function() { self.hunterBtn.setAlpha(self._hunterFull ? 0.35 : 1); });
-    this.hunterBtn.on('pointerdown', function() { if (!self._hunterFull) window.network.emit('team:select', { team: 'hunter' }); });
-
-    this.runnerBtn.on('pointerover', function() { self.runnerBtn.setAlpha(0.8); });
-    this.runnerBtn.on('pointerout', function() { self.runnerBtn.setAlpha(1); });
-    this.runnerBtn.on('pointerdown', function() { window.network.emit('team:select', { team: 'runner' }); });
 
     // Countdown
     this.countdownText = this.add.text(200, 340, '', {
@@ -122,7 +100,6 @@ class LobbyScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     this.readyBtn.on('pointerdown', function() {
-      if (!self.myTeam) return;
       self.isReady = !self.isReady;
       self.readyBtn.setText(self.isReady ? '✓ HAZIR' : 'HAZIR DEĞİL');
       self.readyBtn.setStyle({
@@ -141,10 +118,8 @@ class LobbyScene extends Phaser.Scene {
     this.spectatorBtn.on('pointerdown', function() {
       if (self.isSpectator) return;
       self.isSpectator = true;
-      self.myTeam = null;
-      // Hide team/skin/ready UI
-      self.hunterBtn.setVisible(false);
-      self.runnerBtn.setVisible(false);
+      
+      // Removed references to self.hunterBtn and self.runnerBtn here
       self.readyBtn.setVisible(false);
       self.spectatorBtn.setAlpha(0).disableInteractive();
       self.buildSkinGrid(); // clears skin grid
@@ -169,9 +144,8 @@ class LobbyScene extends Phaser.Scene {
       if (!self.isSpectator) return;
       self.isSpectator = false;
       self.isReady = false;
-      // Restore team/ready UI
-      self.hunterBtn.setVisible(true);
-      self.runnerBtn.setVisible(true);
+      
+      // Removed references to self.hunterBtn and self.runnerBtn here
       self.readyBtn.setVisible(true).setText('HAZIR DEĞİL').setStyle({ color: '#ffddaa', backgroundColor: '#7a2200' });
       // Restore spectator button
       self.spectatorBtn.setStyle({ color: '#aaddff', backgroundColor: '#003355' }).setText('👁  SEYİRCİ OL').setAlpha(1).setInteractive({ useHandCursor: true });
@@ -182,7 +156,7 @@ class LobbyScene extends Phaser.Scene {
       window.network.emit('join', { name: self.playerName });
     });
 
-    // ── POPUP for team rejected ──────────────────────────
+    // ── POPUP ──────────────────────────────────────────
     this.popupBg = this.add.graphics().setDepth(500).setAlpha(0);
     this.popupText = this.add.text(w / 2, h / 2, '', {
       fontFamily: font, fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
@@ -204,39 +178,8 @@ class LobbyScene extends Phaser.Scene {
     // ── SOCKET EVENTS ────────────────────────────────────
     window.network.on('lobby:update', function(data) {
       var players = data.players;
-      var hCount = 0;
-      var rCount = 0;
-      for (var i = 0; i < players.length; i++) {
-        if (players[i].team === 'hunter') hCount++;
-        if (players[i].team === 'runner') rCount++;
-      }
-      self.hunterCount = hCount;
-      self.runnerCount = rCount;
-
-      // Header
-      self.teamHeader.setText(
-        '🔴 KOVALAYANLAR: ' + hCount + '    🟡 KAÇANLAR: ' + rCount
-      );
-
-      // Hunter button dimmed if full
-      self._hunterFull = hCount >= rCount && (hCount > 0 || rCount > 0);
-      self.hunterBtn.setAlpha(self._hunterFull ? 0.3 : 1);
-
       // Title
       self.playerListTitle.setText('OYUNCULAR (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
-
-      // Find my team from server
-      for (var j = 0; j < players.length; j++) {
-        if (players[j].id === window.network.id) {
-          var serverTeam = players[j].team;
-          if (serverTeam !== self.myTeam) {
-            self.myTeam = serverTeam;
-            self.updateTeamButtons();
-            self.buildSkinGrid();
-          }
-          break;
-        }
-      }
 
       // Player list
       var lines = [];
@@ -259,10 +202,6 @@ class LobbyScene extends Phaser.Scene {
       self.playerListText.setText(lines.join('\n'));
     });
 
-    window.network.on('lobby:team-rejected', function() {
-      self.showPopup('Kovalayan takımı dolu! Önce Kaçan seç.');
-    });
-
     window.network.on('lobby:countdown', function(data) {
       if (data.seconds > 0) {
         self.countdownText.setText('Oyun ' + data.seconds + 's içinde başlıyor!');
@@ -281,7 +220,6 @@ class LobbyScene extends Phaser.Scene {
     });
 
     window.network.on('game:spectate', function(data) {
-      // Mid-game spectate: jump directly to SpectatorScene
       if (self.menuMusic) self.menuMusic.stop();
       self.scene.start('Spectator', data);
     });
@@ -309,20 +247,6 @@ class LobbyScene extends Phaser.Scene {
     });
   }
 
-  updateTeamButtons() {
-    if (this.myTeam === 'hunter') {
-      this.hunterBtn.setStyle({ color: '#ffffff', backgroundColor: '#dd2200' });
-      this.runnerBtn.setStyle({ color: '#ffffff', backgroundColor: '#1a5500' });
-    } else if (this.myTeam === 'runner') {
-      this.runnerBtn.setStyle({ color: '#ffffff', backgroundColor: '#228800' });
-      this.hunterBtn.setStyle({ color: '#ffffff', backgroundColor: '#aa2200' });
-    }
-    if (this.myTeam && !this.isReady) {
-      this.readyBtn.setStyle({ color: '#ffddaa', backgroundColor: '#7a2200' });
-      this.readyBtn.setText('HAZIR DEĞİL');
-    }
-  }
-
   buildSkinGrid() {
     for (var i = 0; i < this.skinSprites.length; i++) {
       this.skinSprites[i].destroy();
@@ -331,27 +255,24 @@ class LobbyScene extends Phaser.Scene {
     this.skinSelectionGraphics.clear();
     this.skinPanelGraphics.clear();
 
-    if (!this.myTeam) { this.skinLabel.setAlpha(0); return; }
-
     this.skinLabel.setAlpha(1);
-    var skins = this.myTeam === 'hunter' ? window.hunterSkins : window.runnerSkins;
-    var prefix = this.myTeam === 'hunter' ? 'hunter-skin-' : 'runner-skin-';
-    var folder = this.myTeam === 'hunter' ? 'hunters' : 'runners';
+
     var self = this;
 
-    // Check if skins for this team are loaded yet
+    // DEFINED GLOBAL SKIN VARIABLES HERE - Edit to match your assets
+    var skins = CONSTANTS.SKINS || ['skin_0.png', 'skin_1.png']; // Fallback if CONSTANTS.SKINS doesn't exist
+    var prefix = 'player-';
+    var folder = 'skins';
+    var teamPrefix = 'player';
+    var panelColor = 0xffe0cc; // Single unified color since teams are gone
+
     var allLoaded = skins.length > 0 && this.textures.exists(prefix + '0');
     if (!allLoaded && skins.length > 0) {
-      // Load skins now and rebuild grid when done
       this.skinLabel.setText('SKİNLER YÜKLENİYOR...');
       for (var k = 0; k < skins.length; k++) {
         this.load.spritesheet(prefix + k, 'assets/' + folder + '/' + skins[k], { frameWidth: 256, frameHeight: 256 });
       }
       this.load.once('complete', function() {
-        // Bail if player switched to spectator while skins were loading
-        if (!self.myTeam) return;
-        // Create animations (keys: hunter-walk-N / runner-walk-N)
-        var teamPrefix = self.myTeam === 'hunter' ? 'hunter' : 'runner';
         for (var ai = 0; ai < skins.length; ai++) {
           var aKey = prefix + ai;
           if (self.textures.exists(aKey) && !self.anims.exists(teamPrefix + '-walk-' + ai)) {
@@ -375,8 +296,6 @@ class LobbyScene extends Phaser.Scene {
     var rows = Math.ceil(skins.length / perRow);
     var gridH = rows * size + (rows - 1) * gap;
 
-    // Panel behind skins: light for hunters, dark for runners
-    var panelColor = this.myTeam === 'hunter' ? 0xffe0cc : 0x7a3300;
     this.skinPanelGraphics.fillStyle(panelColor, 0.2);
     this.skinPanelGraphics.fillRoundedRect(startX - 8, startY - 8, gridW + 16, gridH + 16, 8);
 
@@ -404,7 +323,6 @@ class LobbyScene extends Phaser.Scene {
       this.skinSprites.push(spr);
     }
 
-    // Restore highlight
     if (this.mySkin >= 0 && this.mySkin < this.skinSprites.length) {
       var sel = this.skinSprites[this.mySkin];
       this.highlightSkin(sel.x, sel.y, size);
