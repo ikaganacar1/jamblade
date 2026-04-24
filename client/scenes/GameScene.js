@@ -52,25 +52,6 @@ class GameScene extends Phaser.Scene {
 
     this.drawMap();
 
-    // Static shadows
-    var shadowG = this.add.graphics().setDepth(0);
-    shadowG.fillStyle(0x000000, 0.38);
-
-    // Obstacle sprites
-    for (var obs of this.gameData.obstacles) {
-      if (obs.type === 'rock') {
-        shadowG.fillEllipse(obs.x, obs.y + obs.radius * 0.85, obs.radius * 2, obs.radius * 0.65);
-        this.add.image(obs.x, obs.y, 'rock').setDisplaySize(obs.radius * 2, obs.radius * 2);
-      } else if (obs.type === 'tree') {
-        shadowG.fillEllipse(obs.x, obs.y + 18, 50, 16);
-        this.add.image(obs.x, obs.y, 'tree-trunk').setDisplaySize(30, 30);
-        this.add.image(obs.x, obs.y - 10, 'tree-canopy').setDisplaySize(70, 70);
-      } else if (obs.type === 'bush') {
-        shadowG.fillEllipse(obs.x, obs.y + obs.radius * 0.5, obs.radius * 1.6, obs.radius * 0.6);
-        this.add.image(obs.x, obs.y, 'bush').setDisplaySize(obs.radius * 2, obs.radius * 2).setAlpha(0.7);
-      }
-    }
-
     // Player sprites
     this.playerSprites = {};
     for (var [id, p] of Object.entries(this.gameData.players)) {

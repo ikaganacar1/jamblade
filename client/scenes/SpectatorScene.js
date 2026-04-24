@@ -67,24 +67,6 @@ class SpectatorScene extends Phaser.Scene {
       gfill.fillCircle(0, 0, 800);
     }
 
-    // ── WORLD: Shadows + Obstacles ─────────────────────────────
-    var shadowG = addW(this.add.graphics().setDepth(0));
-    shadowG.fillStyle(0x000000, 0.38);
-
-    for (var obs of this.gameData.obstacles) {
-      if (obs.type === 'rock') {
-        shadowG.fillEllipse(obs.x, obs.y + obs.radius * 0.85, obs.radius * 2, obs.radius * 0.65);
-        addW(this.add.image(obs.x, obs.y, 'rock').setDisplaySize(obs.radius * 2, obs.radius * 2));
-      } else if (obs.type === 'tree') {
-        shadowG.fillEllipse(obs.x, obs.y + 18, 50, 16);
-        addW(this.add.image(obs.x, obs.y, 'tree-trunk').setDisplaySize(30, 30));
-        addW(this.add.image(obs.x, obs.y - 10, 'tree-canopy').setDisplaySize(70, 70));
-      } else if (obs.type === 'bush') {
-        shadowG.fillEllipse(obs.x, obs.y + obs.radius * 0.5, obs.radius * 1.6, obs.radius * 0.6);
-        addW(this.add.image(obs.x, obs.y, 'bush').setDisplaySize(obs.radius * 2, obs.radius * 2).setAlpha(0.7));
-      }
-    }
-
     // ── WORLD: Players ─────────────────────────────────────────
     this.playerSprites = {};
     this.worldObjs = worldObjs;

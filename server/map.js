@@ -32,28 +32,7 @@ function isInsideMap(wx, wy) {
 }
 
 function generateObstacles() {
-  const obstacles = [];
-  const rng = (min, max) => min + Math.random() * (max - min);
-
-  for (let i = 0; i < 10; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = rng(100, 700);
-    obstacles.push({ type: 'rock', x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, radius: rng(20, 40) });
-  }
-
-  for (let i = 0; i < 12; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = rng(100, 700);
-    obstacles.push({ type: 'tree', x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, radius: 30 });
-  }
-
-  for (let i = 0; i < 8; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = rng(150, 650);
-    obstacles.push({ type: 'bush', x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, radius: 45 });
-  }
-
-  return obstacles;
+  return [];
 }
 
 function generateSpawnPoints(playerIds) {

@@ -86,20 +86,6 @@ class Game {
         }
       }
 
-      // Push out of solid obstacles
-      for (const obs of this.obstacles) {
-        if (obs.type === 'bush') continue;
-        const odx = newX - obs.x;
-        const ody = newY - obs.y;
-        const oDist = Math.sqrt(odx * odx + ody * ody);
-        const minDist = obs.radius + 16;
-        if (oDist < minDist) {
-          const pushScale = minDist / oDist;
-          newX = obs.x + odx * pushScale;
-          newY = obs.y + ody * pushScale;
-        }
-      }
-
       p.x = newX;
       p.y = newY;
     }
