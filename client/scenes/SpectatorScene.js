@@ -45,7 +45,10 @@ class SpectatorScene extends Phaser.Scene {
       }
     }
 
-    var zoom = 0.5;
+    var imgAspect = 2412 / 1760;
+    var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
+    var displayH = CONSTANTS.WORLD_SIZE;
+    var zoom = Math.min(w / displayW, h / displayH);
     this.zoom = zoom;
 
     var worldObjs = [];
@@ -97,29 +100,8 @@ class SpectatorScene extends Phaser.Scene {
     this.cameras.main.ignore([this.timerText, this.spectatorBadge, this.playerCountText]);
 
     // ── MAIN CAMERA ────────────────────────────────────────────
-    var _imgAspect = 2412 / 1760;
-    var _displayW = CONSTANTS.WORLD_SIZE * _imgAspect;
     this.cameras.main.setZoom(zoom);
-    this.cameras.main.setBounds(
-      -_displayW / 2, -CONSTANTS.WORLD_SIZE / 2,
-      _displayW, CONSTANTS.WORLD_SIZE
-    );
     this.cameras.main.centerOn(0, 0);
-
-    // ── DRAG TO PAN ────────────────────────────────────────────
-    this._drag = null;
-    this.input.on('pointerdown', function(ptr) {
-      self._drag = { px: ptr.x, py: ptr.y, sx: self.cameras.main.scrollX, sy: self.cameras.main.scrollY };
-    });
-    this.input.on('pointermove', function(ptr) {
-      if (!self._drag) return;
-      self.cameras.main.setScroll(
-        self._drag.sx - (ptr.x - self._drag.px) / zoom,
-        self._drag.sy - (ptr.y - self._drag.py) / zoom
-      );
-    });
-    this.input.on('pointerup', function() { self._drag = null; });
-    this.input.on('pointerupoutside', function() { self._drag = null; });
 
     // ── Events ─────────────────────────────────────────────────
     this.latestState = null;

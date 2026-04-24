@@ -43,12 +43,13 @@ class GameScene extends Phaser.Scene {
     var myId = window.network.id;
     var myTeam = this.gameData.players[myId]?.team;
 
+    // Fixed camera: zoom to fit the full map, no following
     var imgAspect = 2412 / 1760;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
-    this.cameras.main.setBounds(
-      -displayW / 2 - 50, -CONSTANTS.WORLD_SIZE / 2 - 50,
-      displayW + 100, CONSTANTS.WORLD_SIZE + 100
-    );
+    var displayH = CONSTANTS.WORLD_SIZE;
+    var zoom = Math.min(this.cameras.main.width / displayW, this.cameras.main.height / displayH);
+    this.cameras.main.setZoom(zoom);
+    this.cameras.main.centerOn(0, 0);
 
     this.drawMap();
 
@@ -56,11 +57,6 @@ class GameScene extends Phaser.Scene {
     this.playerSprites = {};
     for (var [id, p] of Object.entries(this.gameData.players)) {
       this.createPlayerSprite(id, p);
-    }
-
-    var mySpr = this.playerSprites[myId];
-    if (mySpr) {
-      this.cameras.main.startFollow(mySpr.container, true, 0.08, 0.08);
     }
 
     this.joystick = new VirtualJoystick(this);
@@ -126,39 +122,13 @@ class GameScene extends Phaser.Scene {
     this.stateTime += delta;
     var t = Math.min(this.stateTime / CONSTANTS.TICK_INTERVAL, 1);
 
-    // Client-side prediction for local player
-    var mySpr = this.playerSprites[myId];
-    if (mySpr && this.joystick.moving) {
-      var me = state.players[myId];
-      if (me) {
-        var speed = CONSTANTS.PLAYER_SPEED * (delta / 1000);
-        var dx = Math.cos(this.joystick.angle) * speed;
-        var dy = Math.sin(this.joystick.angle) * speed;
-        var nx = mySpr.container.x + dx;
-        var ny = mySpr.container.y + dy;
-        if (!window.isInsideMap || window.isInsideMap(nx, ny)) {
-          mySpr.container.x = nx;
-          mySpr.container.y = ny;
-        } else if (window.isInsideMap(nx, mySpr.container.y)) {
-          mySpr.container.x = nx;
-        } else if (window.isInsideMap(mySpr.container.x, ny)) {
-          mySpr.container.y = ny;
-        }
-      }
-    }
-
     for (var [id, p] of Object.entries(state.players)) {
       var spr = this.playerSprites[id];
       if (!spr) {
         spr = this.createPlayerSprite(id, p);
       }
 
-      var isMe = id === myId;
-
-      if (isMe) {
-        spr.container.x += (p.x - spr.container.x) * 0.08;
-        spr.container.y += (p.y - spr.container.y) * 0.08;
-      } else if (this.prevState && this.prevState.players[id]) {
+      if (this.prevState && this.prevState.players[id]) {
         var prev = this.prevState.players[id];
         spr.container.x = prev.x + (p.x - prev.x) * t;
         spr.container.y = prev.y + (p.y - prev.y) * t;
