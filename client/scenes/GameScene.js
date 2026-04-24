@@ -49,15 +49,25 @@ class GameScene extends Phaser.Scene {
 
     // ── Power bar (HUD) ───────────────────────────────────────────
     var hf = 'Fredoka, sans-serif';
+    var sw = this.cameras.main.width;
+    var sh = this.cameras.main.height;
+
+    // Bar dimensions relative to screen
+    this._bar = {
+      w: 38,
+      h: Math.round(sh * 0.58),
+      x: sw - 56,
+      y: Math.round(sh * 0.18),
+    };
+    var b = this._bar;
+    var bcx = b.x + b.w / 2; // center x of bar
+
     this.powerBarG = this.add.graphics().setScrollFactor(0).setDepth(1001);
-    this.powerBarLabelTop = this.add.text(755, 68, 'GÜÇ', {
-      fontFamily: hf, fontSize: '13px', color: '#ffffff', fontStyle: 'bold',
+    this.powerBarLabelTop = this.add.text(bcx, b.y - 6, 'GÜÇ', {
+      fontFamily: hf, fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(1002);
-    this.powerBarLabelBot = this.add.text(755, 302, 'TIKLA!', {
-      fontFamily: hf, fontSize: '11px', color: '#aaddff', fontStyle: 'bold',
-    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1002);
-    this.aimHintText = this.add.text(755, 315, 'yön: sol', {
-      fontFamily: hf, fontSize: '10px', color: '#88aacc',
+    this.powerBarLabelBot = this.add.text(bcx, b.y + b.h + 6, 'TIKLA!', {
+      fontFamily: hf, fontSize: '13px', color: '#aaddff', fontStyle: 'bold',
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1002);
 
     this.myLaunching = true;
@@ -76,7 +86,6 @@ class GameScene extends Phaser.Scene {
       self.powerBarG.clear();
       self.powerBarLabelTop.setAlpha(0);
       self.powerBarLabelBot.setAlpha(0);
-      self.aimHintText.setAlpha(0);
       self.aimArrow.clear();
     });
 
@@ -186,31 +195,30 @@ class GameScene extends Phaser.Scene {
   drawPowerBar(progress) {
     var g = this.powerBarG;
     g.clear();
-    var bx = 730, by = 72, bw = 50, bh = 226;
+    var bx = this._bar.x, by = this._bar.y, bw = this._bar.w, bh = this._bar.h;
 
     // Dark background
     g.fillStyle(0x000000, 0.75);
-    g.fillRoundedRect(bx - 6, by - 4, bw + 12, bh + 8, 8);
+    g.fillRoundedRect(bx - 5, by - 4, bw + 10, bh + 8, 7);
 
     // Gradient strips: red (bottom) → green (top)
-    var strips = 24;
-    var sh = bh / strips;
+    var strips = 22;
+    var stripH = bh / strips;
     for (var i = 0; i < strips; i++) {
       var t = i / (strips - 1);
       var r = Math.floor(220 * (1 - t));
       var gr = Math.floor(210 * t);
       g.fillStyle((r << 16) | (gr << 8) | 20, 1);
-      g.fillRect(bx, by + bh - (i + 1) * sh, bw, sh + 1);
+      g.fillRect(bx, by + bh - (i + 1) * stripH, bw, stripH + 1);
     }
 
-    // Moving pointer
+    // Moving pointer line + side triangles
     var py = by + bh - progress * bh;
-    g.lineStyle(5, 0xffffff, 1);
+    g.lineStyle(4, 0xffffff, 1);
     g.lineBetween(bx - 4, py, bx + bw + 4, py);
-    // Side triangles
     g.fillStyle(0xffffff, 1);
-    g.fillTriangle(bx - 4, py, bx - 16, py - 9, bx - 16, py + 9);
-    g.fillTriangle(bx + bw + 4, py, bx + bw + 16, py - 9, bx + bw + 16, py + 9);
+    g.fillTriangle(bx - 4, py, bx - 14, py - 8, bx - 14, py + 8);
+    g.fillTriangle(bx + bw + 4, py, bx + bw + 14, py - 8, bx + bw + 14, py + 8);
   }
 
   createPlayerSprite(id, data) {
