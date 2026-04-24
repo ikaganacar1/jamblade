@@ -22,9 +22,13 @@ class BootScene extends Phaser.Scene {
 
     this.setupMapBoundary();
 
-    window.network.connect().then(function() {
-      this.scene.start('Lobby');
-    }.bind(this));
+    // Force the browser to load JapanBrush before Phaser renders any text with it
+    var self = this;
+    document.fonts.load('40px JapanBrush').finally(function() {
+      window.network.connect().then(function() {
+        self.scene.start('Lobby');
+      });
+    });
   }
 
   setupMapBoundary() {
