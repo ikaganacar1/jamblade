@@ -9,7 +9,7 @@ const CONSTANTS = {
   RECONNECT_WINDOW: 10000,
 
   // Beyblade physics
-  PLAYER_RADIUS: 125,         // collision radius in world units (display = 300x300)
+  PLAYER_RADIUS: 110,         // collision radius in world units (display = 300x300)
   FRICTION: 0.985,            // velocity multiplier per tick
   JOYSTICK_FORCE: 1.5,        // tiny force nudge per tick when joystick active
   MAX_SPEED: 28,              // max velocity magnitude per tick
