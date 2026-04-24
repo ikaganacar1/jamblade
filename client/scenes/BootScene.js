@@ -23,11 +23,9 @@ class BootScene extends Phaser.Scene {
       { key: 'cage-active', svgW: 160, svgH: 160 },
     ];
 
-    // Map background
+    // Map images
     this.load.image('map-bg', 'assets/map.png');
-
-    // Fight effect spritesheet (3 cols x 2 rows, 200x200 per frame)
-    this.load.spritesheet('fight-effect', 'assets/fight_effect.png', { frameWidth: 200, frameHeight: 200 });
+    this.load.image('map-borders', 'assets/map_borders.png');
 
     // Only menu music needed at startup — rest loaded per-scene
     this.load.audio('sfx-menu', 'assets/menu-music.mp3');
@@ -108,14 +106,33 @@ class BootScene extends Phaser.Scene {
   startGame() {
     this.generateCircleTexture('ground', 0x4a8a2a, 16);
 
-    // Fight effect animation (6 frames: 3x2 grid)
-    if (this.textures.exists('fight-effect')) {
-      this.anims.create({ key: 'fight-effect', frames: this.anims.generateFrameNumbers('fight-effect', { start: 0, end: 5 }), frameRate: 12, repeat: 0 });
-    }
+    // Build pixel lookup for gear-shaped map boundary
+    this.setupMapBoundary();
 
     window.network.connect().then(function() {
       this.scene.start('Lobby');
     }.bind(this));
+  }
+
+  setupMapBoundary() {
+    if (!this.textures.exists('map-borders')) return;
+    var src = this.textures.get('map-borders').getSourceImage();
+    var imgW = src.naturalWidth || src.width;
+    var imgH = src.naturalHeight || src.height;
+    var canvas = document.createElement('canvas');
+    canvas.width = imgW;
+    canvas.height = imgH;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(src, 0, 0);
+    var pixelData = ctx.getImageData(0, 0, imgW, imgH).data;
+    var scale = imgH / CONSTANTS.WORLD_SIZE; // pixels per world unit
+
+    window.isInsideMap = function(wx, wy) {
+      var px = Math.round(imgW / 2 + wx * scale);
+      var py = Math.round(imgH / 2 + wy * scale);
+      if (px < 0 || py < 0 || px >= imgW || py >= imgH) return false;
+      return pixelData[(py * imgW + px) * 4 + 3] > 128;
+    };
   }
 
   generateDuckTexture(key, color) {

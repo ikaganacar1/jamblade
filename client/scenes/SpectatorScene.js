@@ -53,22 +53,19 @@ class SpectatorScene extends Phaser.Scene {
 
     // ── WORLD: Map ──────────────────────────────────────────────
     var outer = addW(this.add.graphics().setDepth(-3));
-    outer.fillStyle(0x111111, 1);
-    outer.fillRect(-CONSTANTS.MAP_RADIUS - 200, -CONSTANTS.MAP_RADIUS - 200, CONSTANTS.WORLD_SIZE + 400, CONSTANTS.WORLD_SIZE + 400);
+    outer.fillStyle(0x050a10, 1);
+    outer.fillRect(-3000, -3000, 6000, 6000);
 
+    var imgAspect = 2412 / 1760;
+    var displayH = CONSTANTS.WORLD_SIZE;
+    var displayW = displayH * imgAspect;
     if (this.textures.exists('map-bg')) {
-      addW(this.add.image(0, 0, 'map-bg').setDisplaySize(CONSTANTS.MAP_RADIUS * 2, CONSTANTS.MAP_RADIUS * 2).setDepth(-2));
+      addW(this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2));
     } else {
       var gfill = addW(this.add.graphics().setDepth(-2));
-      gfill.fillStyle(0x4a8a2a, 1);
-      gfill.fillCircle(0, 0, CONSTANTS.MAP_RADIUS);
+      gfill.fillStyle(0x1a3a5a, 1);
+      gfill.fillCircle(0, 0, 800);
     }
-
-    var border = addW(this.add.graphics().setDepth(50));
-    border.lineStyle(6, 0xff4444, 0.8);
-    border.strokeCircle(0, 0, CONSTANTS.MAP_RADIUS);
-    border.lineStyle(2, 0xffffff, 0.3);
-    border.strokeCircle(0, 0, CONSTANTS.MAP_RADIUS + 4);
 
     // ── WORLD: Shadows + Obstacles ─────────────────────────────
     var shadowG = addW(this.add.graphics().setDepth(0));
@@ -118,10 +115,12 @@ class SpectatorScene extends Phaser.Scene {
     this.cameras.main.ignore([this.timerText, this.spectatorBadge, this.playerCountText]);
 
     // ── MAIN CAMERA ────────────────────────────────────────────
+    var _imgAspect = 2412 / 1760;
+    var _displayW = CONSTANTS.WORLD_SIZE * _imgAspect;
     this.cameras.main.setZoom(zoom);
     this.cameras.main.setBounds(
-      -CONSTANTS.MAP_RADIUS, -CONSTANTS.MAP_RADIUS,
-      CONSTANTS.MAP_RADIUS * 2, CONSTANTS.MAP_RADIUS * 2
+      -_displayW / 2, -CONSTANTS.WORLD_SIZE / 2,
+      _displayW, CONSTANTS.WORLD_SIZE
     );
     this.cameras.main.centerOn(0, 0);
 

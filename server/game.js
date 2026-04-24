@@ -1,5 +1,5 @@
 const C = require('../shared/constants');
-const { generateObstacles, generateSpawnPoints } = require('./map');
+const { generateObstacles, generateSpawnPoints, isInsideMap } = require('./map');
 
 class Game {
   constructor(io, playerEntries, onGameEnd, runnerSkinCount, hunterSkinCount) {
@@ -74,12 +74,16 @@ class Game {
       let newX = p.x + Math.cos(p.angle) * speed;
       let newY = p.y + Math.sin(p.angle) * speed;
 
-      // Clamp to map circle
-      const dist = Math.sqrt(newX * newX + newY * newY);
-      if (dist > C.MAP_RADIUS) {
-        const scale = C.MAP_RADIUS / dist;
-        newX *= scale;
-        newY *= scale;
+      // Gear-shape boundary: slide along wall if hitting the border
+      if (!isInsideMap(newX, newY)) {
+        if (isInsideMap(newX, p.y)) {
+          newY = p.y;
+        } else if (isInsideMap(p.x, newY)) {
+          newX = p.x;
+        } else {
+          newX = p.x;
+          newY = p.y;
+        }
       }
 
       // Push out of solid obstacles

@@ -43,9 +43,11 @@ class GameScene extends Phaser.Scene {
     var myId = window.network.id;
     var myTeam = this.gameData.players[myId]?.team;
 
+    var imgAspect = 2412 / 1760;
+    var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     this.cameras.main.setBounds(
-      -CONSTANTS.MAP_RADIUS - 50, -CONSTANTS.MAP_RADIUS - 50,
-      CONSTANTS.WORLD_SIZE + 100, CONSTANTS.WORLD_SIZE + 100
+      -displayW / 2 - 50, -CONSTANTS.WORLD_SIZE / 2 - 50,
+      displayW + 100, CONSTANTS.WORLD_SIZE + 100
     );
 
     this.drawMap();
@@ -151,13 +153,15 @@ class GameScene extends Phaser.Scene {
         var speed = CONSTANTS.PLAYER_SPEED * (delta / 1000);
         var dx = Math.cos(this.joystick.angle) * speed;
         var dy = Math.sin(this.joystick.angle) * speed;
-        mySpr.container.x += dx;
-        mySpr.container.y += dy;
-        var dist = Math.sqrt(mySpr.container.x * mySpr.container.x + mySpr.container.y * mySpr.container.y);
-        if (dist > CONSTANTS.MAP_RADIUS) {
-          var scale = CONSTANTS.MAP_RADIUS / dist;
-          mySpr.container.x *= scale;
-          mySpr.container.y *= scale;
+        var nx = mySpr.container.x + dx;
+        var ny = mySpr.container.y + dy;
+        if (!window.isInsideMap || window.isInsideMap(nx, ny)) {
+          mySpr.container.x = nx;
+          mySpr.container.y = ny;
+        } else if (window.isInsideMap(nx, mySpr.container.y)) {
+          mySpr.container.x = nx;
+        } else if (window.isInsideMap(mySpr.container.x, ny)) {
+          mySpr.container.y = ny;
         }
       }
     }
@@ -244,29 +248,23 @@ class GameScene extends Phaser.Scene {
   }
 
   drawMap() {
+    // Dark fill behind everything in case the image doesn't cover the edges
     var outer = this.add.graphics();
-    outer.fillStyle(0x111111, 1);
-    outer.fillRect(
-      -CONSTANTS.MAP_RADIUS - 200, -CONSTANTS.MAP_RADIUS - 200,
-      CONSTANTS.WORLD_SIZE + 400, CONSTANTS.WORLD_SIZE + 400
-    );
+    outer.fillStyle(0x050a10, 1);
+    outer.fillRect(-3000, -3000, 6000, 6000);
     outer.setDepth(-3);
 
-    var mapSize = CONSTANTS.MAP_RADIUS * 2;
+    // Map background — display at natural aspect ratio scaled to WORLD_SIZE height
+    var imgAspect = 2412 / 1760;
+    var displayH = CONSTANTS.WORLD_SIZE;
+    var displayW = displayH * imgAspect;
     if (this.textures.exists('map-bg')) {
-      this.add.image(0, 0, 'map-bg').setDisplaySize(mapSize, mapSize).setDepth(-2);
+      this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2);
     } else {
       var g = this.add.graphics();
-      g.fillStyle(0x4a8a2a, 1);
-      g.fillCircle(0, 0, CONSTANTS.MAP_RADIUS);
+      g.fillStyle(0x1a3a5a, 1);
+      g.fillCircle(0, 0, 800);
       g.setDepth(-2);
     }
-
-    var border = this.add.graphics();
-    border.lineStyle(6, 0xff4444, 0.8);
-    border.strokeCircle(0, 0, CONSTANTS.MAP_RADIUS);
-    border.lineStyle(2, 0xffffff, 0.3);
-    border.strokeCircle(0, 0, CONSTANTS.MAP_RADIUS + 4);
-    border.setDepth(50);
   }
 }
