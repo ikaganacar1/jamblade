@@ -3,11 +3,21 @@ const CONSTANTS = {
   WORLD_SIZE: 2000,
   TICK_RATE: 20,
   TICK_INTERVAL: 50,
-  PLAYER_SPEED: 200,
   GAME_DURATION: 180,
   MIN_PLAYERS: 3,
   MAX_PLAYERS: 20,
   RECONNECT_WINDOW: 10000,
+
+  // Beyblade physics
+  PLAYER_RADIUS: 150,         // collision radius in world units (display = 300x300)
+  FRICTION: 0.985,            // velocity multiplier per tick
+  JOYSTICK_FORCE: 1.5,        // tiny force nudge per tick when joystick active
+  MAX_SPEED: 28,              // max velocity magnitude per tick
+  WALL_BOUNCE: 0.55,          // speed retained on gear wall bounce
+  SPIN_DECAY: 0.04,           // spin speed lost per tick (~125s to drain fully)
+  SPIN_COLLISION_LOSS: 6,     // spin lost on each hit
+  SPIN_COLLISION_FACTOR: 0.12,// spin → collision impulse multiplier
+
   PLAYER_NAMES: [
     'ÇirkinÖrdek', 'KorkakTavuk', 'NinjaKaz', 'Gurba', 'PanikTavşan',
     'ÇirkinMalKöpek', 'KırmızıBoğa', 'LogitechFare', 'LinuxPenguen', 'YürüyenUçak',

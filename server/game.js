@@ -13,23 +13,16 @@ class Game {
     const playerIds = playerEntries.map(([id]) => id);
     const spawns = generateSpawnPoints(playerIds);
 
-    var rSkinCount = runnerSkinCount || 0;
-    var hSkinCount = hunterSkinCount || 0;
-    var rFallbackSkin = 0;
-    var hFallbackSkin = 0;
-
     this.players = new Map();
-    for (const [id, { name, team, skin: chosenSkin }] of playerEntries) {
+    for (const [id, { name, team, skin }] of playerEntries) {
       const spawn = spawns[id];
-      var skin = chosenSkin >= 0 ? chosenSkin : -1;
-      if (skin === -1) {
-        if (team === 'runner' && rSkinCount > 0) skin = rFallbackSkin++ % rSkinCount;
-        if (team === 'hunter' && hSkinCount > 0) skin = hFallbackSkin++ % hSkinCount;
-      }
       this.players.set(id, {
         name, team, skin,
         x: spawn.x, y: spawn.y,
-        angle: 0, moving: false,
+        vx: 0, vy: 0,
+        joystickAngle: 0,
+        moving: false,
+        spinSpeed: 100,
       });
     }
 
@@ -43,7 +36,7 @@ class Game {
   getFullState() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin, spinSpeed: p.spinSpeed };
     }
     return { players: playersData, obstacles: this.obstacles };
   }
@@ -51,12 +44,11 @@ class Game {
   start() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin, spinSpeed: p.spinSpeed };
     }
 
     this.io.emit('game:start', { players: playersData, obstacles: this.obstacles });
 
-    // Delay ticks to match client countdown screen
     setTimeout(() => {
       this.tickTimer = setInterval(() => this.tick(), C.TICK_INTERVAL);
       this.timerInterval = setInterval(() => {
@@ -67,20 +59,45 @@ class Game {
   }
 
   tick() {
-    for (const [, p] of this.players) {
-      if (!p.moving) continue;
+    const entries = [...this.players.entries()];
 
-      const speed = C.PLAYER_SPEED / C.TICK_RATE;
-      let newX = p.x + Math.cos(p.angle) * speed;
-      let newY = p.y + Math.sin(p.angle) * speed;
+    // ── Movement & spin decay ──────────────────────────────────────
+    for (const [, p] of entries) {
+      // Joystick: tiny force nudge
+      if (p.moving) {
+        p.vx += Math.cos(p.joystickAngle) * C.JOYSTICK_FORCE;
+        p.vy += Math.sin(p.joystickAngle) * C.JOYSTICK_FORCE;
+      }
 
-      // Gear-shape boundary: slide along wall if hitting the border
+      // Friction
+      p.vx *= C.FRICTION;
+      p.vy *= C.FRICTION;
+
+      // Clamp speed
+      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      if (speed > C.MAX_SPEED) {
+        p.vx = (p.vx / speed) * C.MAX_SPEED;
+        p.vy = (p.vy / speed) * C.MAX_SPEED;
+      }
+
+      // Spin decay
+      p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_DECAY);
+
+      // Move
+      let newX = p.x + p.vx;
+      let newY = p.y + p.vy;
+
+      // Gear wall collision — bounce with damping
       if (!isInsideMap(newX, newY)) {
         if (isInsideMap(newX, p.y)) {
+          p.vy = -p.vy * C.WALL_BOUNCE;
           newY = p.y;
         } else if (isInsideMap(p.x, newY)) {
+          p.vx = -p.vx * C.WALL_BOUNCE;
           newX = p.x;
         } else {
+          p.vx = -p.vx * C.WALL_BOUNCE;
+          p.vy = -p.vy * C.WALL_BOUNCE;
           newX = p.x;
           newY = p.y;
         }
@@ -90,20 +107,69 @@ class Game {
       p.y = newY;
     }
 
+    // ── Player-player collision ────────────────────────────────────
+    const minDist = C.PLAYER_RADIUS * 2;
+
+    for (let i = 0; i < entries.length; i++) {
+      for (let j = i + 1; j < entries.length; j++) {
+        const [, p1] = entries[i];
+        const [, p2] = entries[j];
+
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDist && dist > 0.01) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+
+          // Relative velocity of p1 approaching p2 along the normal
+          const relVel = (p1.vx - p2.vx) * nx + (p1.vy - p2.vy) * ny;
+
+          // Spin makes collisions explosive — higher spin = bigger push
+          const spinBonus = (p1.spinSpeed + p2.spinSpeed) * C.SPIN_COLLISION_FACTOR;
+
+          // Impulse: restitution on approach + always-on spin push
+          const impulse = Math.max(0, relVel) * 1.4 + spinBonus;
+
+          p1.vx -= nx * impulse;
+          p1.vy -= ny * impulse;
+          p2.vx += nx * impulse;
+          p2.vy += ny * impulse;
+
+          // Separate overlapping players
+          const overlap = (minDist - dist) * 0.5;
+          p1.x -= nx * overlap;
+          p1.y -= ny * overlap;
+          p2.x += nx * overlap;
+          p2.y += ny * overlap;
+
+          // Both lose spin on impact
+          p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
+          p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
+        }
+      }
+    }
+
     this.broadcastState();
   }
 
   handleInput(socketId, { angle, moving }) {
     const player = this.players.get(socketId);
     if (!player) return;
-    player.angle = angle;
+    player.joystickAngle = angle;
     player.moving = moving;
   }
 
   broadcastState() {
     const players = {};
     for (const [id, p] of this.players) {
-      players[id] = { x: p.x, y: p.y, angle: p.angle, moving: p.moving, team: p.team, name: p.name, skin: p.skin };
+      players[id] = {
+        x: p.x, y: p.y,
+        vx: p.vx, vy: p.vy,
+        team: p.team, name: p.name, skin: p.skin,
+        spinSpeed: p.spinSpeed,
+      };
     }
     this.io.emit('game:state', { players, timer: this.timeRemaining });
   }
@@ -111,9 +177,7 @@ class Game {
   endGame() {
     clearInterval(this.tickTimer);
     clearInterval(this.timerInterval);
-
     this.io.emit('game:end', { winner: 'runner', stats: { totalRunners: 0, cagedRunners: 0, freeRunners: 0 } });
-
     if (this.onGameEnd) this.onGameEnd();
   }
 

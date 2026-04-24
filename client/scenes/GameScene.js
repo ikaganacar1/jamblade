@@ -105,9 +105,9 @@ class GameScene extends Phaser.Scene {
         spr.container.y += (p.y - spr.container.y) * 0.2;
       }
 
-      if (p.moving) {
-        spr.sprite.setFlipX(Math.cos(p.angle) < 0);
-      }
+      // Spin the sprite locally based on server spinSpeed
+      spr.localRotation = (spr.localRotation || 0) + (p.spinSpeed / 100) * 18 * (delta / 1000);
+      spr.sprite.rotation = spr.localRotation;
 
       spr.nameLabel.setText(p.name);
     }
@@ -122,19 +122,20 @@ class GameScene extends Phaser.Scene {
   }
 
   createPlayerSprite(id, data) {
+    var size = CONSTANTS.PLAYER_RADIUS * 2; // 300 world units
     var container = this.add.container(data.x, data.y);
-    var sprite = this.add.image(0, 0, 'player').setDisplaySize(48, 48);
     var shadow = this.add.graphics();
-    shadow.fillStyle(0x000000, 0.25);
-    shadow.fillEllipse(0, 20, 36, 12);
-    var nameLabel = this.add.text(0, -28, data.name || '', {
-      fontSize: '11px', color: '#ffffff',
-      backgroundColor: '#00000088', padding: { x: 3, y: 1 },
+    shadow.fillStyle(0x000000, 0.3);
+    shadow.fillEllipse(size * 0.15, size * 0.35, size * 0.9, size * 0.28);
+    var sprite = this.add.image(0, 0, 'player').setDisplaySize(size, size);
+    var nameLabel = this.add.text(0, -(size * 0.6), data.name || '', {
+      fontSize: '20px', color: '#ffffff',
+      backgroundColor: '#00000088', padding: { x: 4, y: 2 },
     }).setOrigin(0.5);
     container.add([shadow, sprite, nameLabel]);
     container.setDepth(100);
 
-    this.playerSprites[id] = { container, sprite, nameLabel };
+    this.playerSprites[id] = { container, sprite, nameLabel, localRotation: 0 };
     return this.playerSprites[id];
   }
 
