@@ -17,6 +17,7 @@ const CONSTANTS = {
   SPIN_DECAY: 0.04,           // spin speed lost per tick (~125s to drain fully)
   SPIN_COLLISION_LOSS: 6,     // spin lost on each hit
   SPIN_COLLISION_FACTOR: 0.12,// spin → collision impulse multiplier
+  SPIN_WALL_LOSS: 3,          // spin lost on wall bounce
 
   PLAYER_NAMES: [
     'ÇirkinÖrdek', 'KorkakTavuk', 'NinjaKaz', 'Gurba', 'PanikTavşan',

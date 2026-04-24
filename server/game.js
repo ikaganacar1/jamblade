@@ -20,10 +20,11 @@ class Game {
         name,
         x: spawn.x, y: spawn.y,
         vx: 0, vy: 0,
-        joystickAngle: Math.atan2(-spawn.y, -spawn.x), // default aim toward center
+        joystickAngle: Math.atan2(-spawn.y, -spawn.x),
         moving: false,
         spinSpeed: 100,
         state: 'launching',
+        eliminatedAt: null,
       });
     }
 
@@ -47,7 +48,6 @@ class Game {
     for (const [id, p] of this.players) {
       playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state };
     }
-
     this.io.emit('game:start', { players: playersData, obstacles: this.obstacles });
 
     setTimeout(() => {
@@ -62,35 +62,43 @@ class Game {
   tick() {
     const entries = [...this.players.entries()];
 
-    // ── Movement & spin decay ──────────────────────────────────────
-    for (const [, p] of entries) {
+    // ── Movement, spin decay, elimination ─────────────────────────
+    for (const [id, p] of entries) {
       if (p.state === 'launching') continue;
-      // Joystick: tiny force nudge
-      if (p.moving) {
+
+      // Apply joystick force (active only)
+      if (p.moving && p.state === 'active') {
         p.vx += Math.cos(p.joystickAngle) * C.JOYSTICK_FORCE;
         p.vy += Math.sin(p.joystickAngle) * C.JOYSTICK_FORCE;
       }
 
-      // Friction
+      // Friction + speed clamp
       p.vx *= C.FRICTION;
       p.vy *= C.FRICTION;
+      const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      if (spd > C.MAX_SPEED) { p.vx = p.vx / spd * C.MAX_SPEED; p.vy = p.vy / spd * C.MAX_SPEED; }
 
-      // Clamp speed
-      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (speed > C.MAX_SPEED) {
-        p.vx = (p.vx / speed) * C.MAX_SPEED;
-        p.vy = (p.vy / speed) * C.MAX_SPEED;
+      // Spin decay (active only)
+      if (p.state === 'active') {
+        p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_DECAY);
+
+        // Elimination: spin depleted → eject outward
+        if (p.spinSpeed <= 0) {
+          p.state = 'eliminated';
+          p.eliminatedAt = Date.now();
+          const d = Math.sqrt(p.x * p.x + p.y * p.y) || 1;
+          p.vx = (p.x / d) * C.MAX_SPEED * 5;
+          p.vy = (p.y / d) * C.MAX_SPEED * 5;
+          this.io.emit('game:eliminated', { playerId: id, name: p.name });
+        }
       }
-
-      // Spin decay
-      p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_DECAY);
 
       // Move
       let newX = p.x + p.vx;
       let newY = p.y + p.vy;
 
-      // Gear wall collision — bounce with damping
-      if (!isInsideMap(newX, newY)) {
+      // Gear wall: bounce + spin loss (skip for eliminated — they fly out)
+      if (p.state !== 'eliminated' && !isInsideMap(newX, newY)) {
         if (isInsideMap(newX, p.y)) {
           p.vy = -p.vy * C.WALL_BOUNCE;
           newY = p.y;
@@ -103,55 +111,56 @@ class Game {
           newX = p.x;
           newY = p.y;
         }
+        p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_WALL_LOSS);
       }
 
       p.x = newX;
       p.y = newY;
     }
 
-    // ── Player-player collision ────────────────────────────────────
+    // ── Player-player collision (active only) ──────────────────────
     const minDist = C.PLAYER_RADIUS * 2;
-
     for (let i = 0; i < entries.length; i++) {
       for (let j = i + 1; j < entries.length; j++) {
         const [, p1] = entries[i];
         const [, p2] = entries[j];
+        if (p1.state !== 'active' || p2.state !== 'active') continue;
 
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist >= minDist || dist < 0.01) continue;
 
-        if (dist < minDist && dist > 0.01 && p1.state === 'active' && p2.state === 'active') {
-          const nx = dx / dist;
-          const ny = dy / dist;
+        const nx = dx / dist, ny = dy / dist;
+        const relVel = (p1.vx - p2.vx) * nx + (p1.vy - p2.vy) * ny;
+        const spinBonus = (p1.spinSpeed + p2.spinSpeed) * C.SPIN_COLLISION_FACTOR;
+        const impulse = Math.max(0, relVel) * 1.4 + spinBonus;
 
-          // Relative velocity of p1 approaching p2 along the normal
-          const relVel = (p1.vx - p2.vx) * nx + (p1.vy - p2.vy) * ny;
+        p1.vx -= nx * impulse; p1.vy -= ny * impulse;
+        p2.vx += nx * impulse; p2.vy += ny * impulse;
 
-          // Spin makes collisions explosive — higher spin = bigger push
-          const spinBonus = (p1.spinSpeed + p2.spinSpeed) * C.SPIN_COLLISION_FACTOR;
+        const overlap = (minDist - dist) * 0.5;
+        p1.x -= nx * overlap; p1.y -= ny * overlap;
+        p2.x += nx * overlap; p2.y += ny * overlap;
 
-          // Impulse: restitution on approach + always-on spin push
-          const impulse = Math.max(0, relVel) * 1.4 + spinBonus;
-
-          p1.vx -= nx * impulse;
-          p1.vy -= ny * impulse;
-          p2.vx += nx * impulse;
-          p2.vy += ny * impulse;
-
-          // Separate overlapping players
-          const overlap = (minDist - dist) * 0.5;
-          p1.x -= nx * overlap;
-          p1.y -= ny * overlap;
-          p2.x += nx * overlap;
-          p2.y += ny * overlap;
-
-          // Both lose spin on impact
-          p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
-          p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
-        }
+        p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
+        p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
       }
     }
+
+    // ── Win condition ──────────────────────────────────────────────
+    const alive = [...this.players.values()].filter(p => p.state === 'active' || p.state === 'launching');
+    if (alive.length <= 1) {
+      this.endGame(alive[0]?.name ?? null);
+      return;
+    }
+
+    // ── Remove eliminated players after visual flyoff (2s) ─────────
+    const toRemove = [];
+    for (const [id, p] of this.players) {
+      if (p.state === 'eliminated' && Date.now() - p.eliminatedAt > 2000) toRemove.push(id);
+    }
+    toRemove.forEach(id => this.players.delete(id));
 
     this.broadcastState();
   }
@@ -159,7 +168,6 @@ class Game {
   handleLaunch(socketId, { speed, angle }) {
     const player = this.players.get(socketId);
     if (!player || player.state !== 'launching') return;
-    // Map bar 0–1 to 30–100% of max speed so even min-bar gives some movement
     const launchSpeed = (0.3 + speed * 0.7) * C.MAX_SPEED;
     player.vx = Math.cos(angle) * launchSpeed;
     player.vy = Math.sin(angle) * launchSpeed;
@@ -176,32 +184,37 @@ class Game {
   broadcastState() {
     const players = {};
     for (const [id, p] of this.players) {
-      players[id] = {
-        x: p.x, y: p.y,
-        vx: p.vx, vy: p.vy,
-        name: p.name,
-        spinSpeed: p.spinSpeed,
-        state: p.state,
-      };
+      players[id] = { x: p.x, y: p.y, vx: p.vx, vy: p.vy, name: p.name, spinSpeed: p.spinSpeed, state: p.state };
     }
     this.io.emit('game:state', { players, timer: this.timeRemaining });
   }
 
-  endGame() {
+  endGame(winnerName = null) {
     clearInterval(this.tickTimer);
     clearInterval(this.timerInterval);
-    this.io.emit('game:end', { winner: 'runner', stats: { totalRunners: 0, cagedRunners: 0, freeRunners: 0 } });
+
+    // If timer ran out with no explicit winner, pick highest spin player
+    if (!winnerName) {
+      let maxSpin = -1;
+      for (const p of this.players.values()) {
+        if ((p.state === 'active' || p.state === 'launching') && p.spinSpeed > maxSpin) {
+          maxSpin = p.spinSpeed;
+          winnerName = p.name;
+        }
+      }
+    }
+
+    this.io.emit('game:end', { winnerName });
     if (this.onGameEnd) this.onGameEnd();
   }
 
   handleDisconnect(socketId) {
     this.players.delete(socketId);
-    if (this.players.size < 2) this.endGame();
+    const alive = [...this.players.values()].filter(p => p.state === 'active' || p.state === 'launching');
+    if (alive.length <= 1) this.endGame(alive[0]?.name ?? null);
   }
 
-  hasPlayer(socketId) {
-    return this.players.has(socketId);
-  }
+  hasPlayer(socketId) { return this.players.has(socketId); }
 }
 
 module.exports = Game;

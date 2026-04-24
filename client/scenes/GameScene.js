@@ -91,8 +91,8 @@ class GameScene extends Phaser.Scene {
 
     // ── HUD ───────────────────────────────────────────────────────
     this.timerText = this.add.text(10, 10, '', {
-      fontFamily: hf, fontSize: '20px', color: '#ffffff',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 }, fontStyle: 'bold',
+      fontFamily: hf, fontSize: '20px', color: '#FF85BB',
+      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 }, fontStyle: 'bold',
     }).setScrollFactor(0).setDepth(999);
 
     // Input send
@@ -114,6 +114,10 @@ class GameScene extends Phaser.Scene {
       this.latestState = state;
       this.stateTime = 0;
     }.bind(this));
+
+    // Store my name so ResultScene can detect if I won
+    var myData = this.gameData.players[myId];
+    if (myData) window._myName = myData.name;
 
     window.network.on('game:end', function(data) {
       this.joystick.destroy();
@@ -174,10 +178,13 @@ class GameScene extends Phaser.Scene {
         spr.container.y += (p.y - spr.container.y) * 0.2;
       }
 
-      // Only spin active players; launching players sit still
+      // Spin active players; fade out eliminated
       if (p.state === 'active') {
         spr.localRotation = (spr.localRotation || 0) + (p.spinSpeed / 100) * 18 * (delta / 1000);
         spr.sprite.rotation = spr.localRotation;
+        spr.container.setAlpha(1);
+      } else if (p.state === 'eliminated') {
+        spr.container.setAlpha(Math.max(0, spr.container.alpha - delta * 0.001));
       }
 
       spr.nameLabel.setText(p.name);

@@ -20,74 +20,50 @@ class CountdownScene extends Phaser.Scene {
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
 
+    // ── Background (matches lobby) ────────────────────────────────
     var bg = this.add.graphics();
-    bg.fillGradientStyle(0xFFAA00, 0xFFAA00, 0xFFD786, 0xFFD786, 1);
+    bg.fillGradientStyle(0x173a8b, 0x173a8b, 0xFFCEE3, 0xFFCEE3, 1);
     bg.fillRect(0, 0, w, h);
 
-    this.add.text(w / 2, 50, 'HAZIRLANIYOR!', {
-      fontFamily: font, fontSize: '36px', color: '#3a1500',
-      fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
+    // ── Title ─────────────────────────────────────────────────────
+    this.add.text(w / 2, 28, 'JamBlade', {
+      fontFamily: 'JapanBrush', fontSize: '42px', color: '#FF85BB',
+      stroke: '#021A54', strokeThickness: 3,
     }).setOrigin(0.5);
 
-    // Avatar sprite
+    // ── Player avatar + name ──────────────────────────────────────
     if (myData) {
-      var avatar = this.add.image(w / 2, h / 2 - 10, 'player').setDisplaySize(96, 96);
-
-      // Gentle floating animation on avatar
+      var avatar = this.add.image(w / 2, h / 2 - 16, 'player').setDisplaySize(100, 100);
       this.tweens.add({
-        targets: avatar,
-        y: avatar.y - 8,
-        duration: 1000,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
+        targets: avatar, y: avatar.y - 8,
+        duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       });
-
-      // Player name below avatar
-      this.add.text(w / 2, h / 2 + 60, myData.name || '', {
-        fontFamily: font, fontSize: '18px', color: '#ffffff',
-        stroke: '#000000', strokeThickness: 3,
+      this.add.text(w / 2, h / 2 + 58, myData.name || '', {
+        fontFamily: font, fontSize: '20px', color: '#FF85BB',
+        stroke: '#021A54', strokeThickness: 3, fontStyle: 'bold',
       }).setOrigin(0.5);
     }
 
-    // Game start sound
     this.sound.play('sfx-game-start', { volume: 0.5 });
 
-    // Countdown text (starts hidden, shown by timer)
-    this.countdownText = this.add.text(w / 2, h - 60, '', {
-      fontFamily: font, fontSize: '64px', color: '#ffffff',
-      fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
+    // ── Countdown numbers ─────────────────────────────────────────
+    this.countdownText = this.add.text(w / 2, h - 55, '', {
+      fontFamily: 'JapanBrush', fontSize: '64px', color: '#ffffff',
+      stroke: '#021A54', strokeThickness: 5,
     }).setOrigin(0.5).setAlpha(0);
 
-    // Start countdown sequence: 3 → 2 → 1 → BASLA!
     var self = this;
-    var counts = ['3', '2', '1', 'BASLA!'];
-    var delay = 0;
-
+    var counts = ['3', '2', '1', 'HAZIR!'];
     for (var i = 0; i < counts.length; i++) {
       (function(idx) {
-        self.time.delayedCall(delay + idx * 1000, function() {
-          self.countdownText.setText(counts[idx]);
-          self.countdownText.setAlpha(1);
-          self.countdownText.setScale(1.5);
-          if (counts[idx] === 'BASLA!') {
-            self.countdownText.setColor('#f0c020');
-            self.countdownText.setFontSize('48px');
-          } else {
-            self.countdownText.setColor('#ffffff');
-            self.countdownText.setFontSize('64px');
-          }
-          self.tweens.add({
-            targets: self.countdownText,
-            scale: 1,
-            duration: 400,
-            ease: 'Back.easeOut',
-          });
+        self.time.delayedCall(idx * 1000, function() {
+          self.countdownText.setText(counts[idx]).setAlpha(1).setScale(1.5);
+          self.countdownText.setColor(counts[idx] === 'HAZIR!' ? '#FF85BB' : '#ffffff');
+          self.tweens.add({ targets: self.countdownText, scale: 1, duration: 380, ease: 'Back.easeOut' });
         });
       })(i);
     }
 
-    // Transition to game after countdown
     this.time.delayedCall(counts.length * 1000, function() {
       self.scene.start('Game', self.gameData);
     });

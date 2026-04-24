@@ -51,18 +51,18 @@ class SpectatorScene extends Phaser.Scene {
 
     // ── HUD ────────────────────────────────────────────────────
     this.timerText = this.add.text(10, 10, '', {
-      fontFamily: font, fontSize: '20px', color: '#ffffff',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 }, fontStyle: 'bold',
+      fontFamily: font, fontSize: '20px', color: '#FF85BB',
+      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 }, fontStyle: 'bold',
     }).setScrollFactor(0).setDepth(1000);
 
     this.spectatorBadge = this.add.text(w / 2, 10, '👁  SEYİRCİ', {
-      fontFamily: font, fontSize: '16px', color: '#ffdd88', fontStyle: 'bold',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 },
+      fontFamily: font, fontSize: '16px', color: '#FF85BB', fontStyle: 'bold',
+      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 },
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1000);
 
     this.playerCountText = this.add.text(w - 10, 10, '', {
-      fontFamily: font, fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 },
+      fontFamily: font, fontSize: '14px', color: '#FF85BB', fontStyle: 'bold',
+      backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 },
     }).setOrigin(1, 0).setScrollFactor(0).setDepth(1000);
 
     this.cameras.main.ignore([this.timerText, this.spectatorBadge, this.playerCountText]);
