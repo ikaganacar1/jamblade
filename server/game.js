@@ -112,6 +112,7 @@ class Game {
 
       // Gear wall: bounce + spin loss (skip for eliminated — they fly out)
       if (p.state !== 'eliminated' && !isInsideMap(newX, newY)) {
+        const preSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
         if (isInsideMap(newX, p.y)) {
           p.vy = -p.vy * C.WALL_BOUNCE;
           newY = p.y;
@@ -125,6 +126,9 @@ class Game {
           newY = p.y;
         }
         p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_WALL_LOSS);
+        // Shake the player who hit the wall
+        const wallShake = (preSpeed / C.MAX_SPEED) * 0.006;
+        this.io.to(id).emit('game:shake', { duration: 160, intensity: wallShake });
       }
 
       p.x = newX;
@@ -135,8 +139,8 @@ class Game {
     const minDist = C.PLAYER_RADIUS * 2;
     for (let i = 0; i < entries.length; i++) {
       for (let j = i + 1; j < entries.length; j++) {
-        const [, p1] = entries[i];
-        const [, p2] = entries[j];
+        const [id1, p1] = entries[i];
+        const [id2, p2] = entries[j];
         if (p1.state !== 'active' || p2.state !== 'active') continue;
 
         const dx = p2.x - p1.x;
@@ -158,6 +162,11 @@ class Game {
 
         p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
         p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
+
+        // Shake both colliding players — harder hit = bigger shake
+        const hitShake = Math.min(impulse / 80, 1) * 0.012;
+        this.io.to(id1).emit('game:shake', { duration: 220, intensity: hitShake });
+        this.io.to(id2).emit('game:shake', { duration: 220, intensity: hitShake });
       }
     }
 

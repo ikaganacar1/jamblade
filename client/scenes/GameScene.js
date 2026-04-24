@@ -124,11 +124,16 @@ class GameScene extends Phaser.Scene {
       this.scene.start('Result', data);
     }.bind(this));
 
+    window.network.on('game:shake', function(data) {
+      this.cameras.main.shake(data.duration, data.intensity);
+    }.bind(this));
+
     this.events.once('shutdown', function() {
       window.network.off('game:state');
       window.network.off('game:end');
       if (this.inputTimer) this.inputTimer.remove();
       if (this.launchCountdown) this.launchCountdown.remove();
+      window.network.off('game:shake');
     }, this);
   }
 

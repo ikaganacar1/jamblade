@@ -11,7 +11,7 @@ const CONSTANTS = {
   // Beyblade physics
   PLAYER_RADIUS: 110,
   FRICTION: 0.988,            // less friction → coast longer
-  JOYSTICK_FORCE: 2.5,        // more responsive steering
+  JOYSTICK_FORCE: 1.5,        // more responsive steering
   MAX_SPEED: 40,              // faster overall
   WALL_BOUNCE: 0.92,          // very bouncy walls
   SPIN_DECAY: 0.04,
