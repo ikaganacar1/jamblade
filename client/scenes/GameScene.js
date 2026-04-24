@@ -111,6 +111,12 @@ class GameScene extends Phaser.Scene {
       this.joystick.destroy();
       this.scene.start('Result', data);
     }.bind(this));
+
+    this.events.once('shutdown', function() {
+      window.network.off('game:state');
+      window.network.off('game:end');
+      if (this.inputTimer) this.inputTimer.remove();
+    }, this);
   }
 
   update(time, delta) {

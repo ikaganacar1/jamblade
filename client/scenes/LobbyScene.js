@@ -115,7 +115,7 @@ class LobbyScene extends Phaser.Scene {
       if (!self.isSpectator) return;
       self.isSpectator = false;
       self.isReady = false;
-      self.readyBtn.setVisible(true).setText('HAZIR VER').setStyle({ color: '#FF85BB', backgroundColor: '#ffe0d4' });
+      self.readyBtn.setVisible(true).setText('HAZIR DEĞİL').setStyle({ color: '#FF85BB', backgroundColor: '#7a2200' });
       self.spectatorBtn.setAlpha(1).setInteractive({ useHandCursor: true });
       self.spectatorStatusText.setAlpha(0);
       self.backToPlayerBtn.setAlpha(0);
@@ -183,6 +183,15 @@ class LobbyScene extends Phaser.Scene {
 
     window.network.on('lobby:gameInProgress', function() {
       self.playerListText.setText('Oyun devam ediyor, bekleyin...');
+    });
+
+    this.events.once('shutdown', function() {
+      window.network.off('lobby:update');
+      window.network.off('lobby:countdown');
+      window.network.off('game:start');
+      window.network.off('game:spectate');
+      window.network.off('lobby:full');
+      window.network.off('lobby:gameInProgress');
     });
   }
 

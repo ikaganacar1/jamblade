@@ -5,7 +5,6 @@ class NetworkManager {
   }
 
   connect() {
-    // Detect base path from current URL for subpath deployments
     var base = window.location.pathname.split('/').slice(0, -1).filter(Boolean);
     var socketPath = (base.length ? '/' + base[0] : '') + '/socket.io';
     this.socket = io({ path: socketPath, transports: ['websocket', 'polling'] });
@@ -22,16 +21,31 @@ class NetworkManager {
   }
 
   on(event, callback) {
+    // Remove previous listener for this event to prevent duplicate handlers
+    if (this.listeners.has(event) && this.socket) {
+      this.socket.off(event, this.listeners.get(event));
+    }
+    this.listeners.set(event, callback);
     if (this.socket) {
       this.socket.on(event, callback);
     }
-    this.listeners.set(event, callback);
+  }
+
+  off(event) {
+    const cb = this.listeners.get(event);
+    if (cb && this.socket) this.socket.off(event, cb);
+    this.listeners.delete(event);
+  }
+
+  offAll() {
+    for (const [event, cb] of this.listeners) {
+      if (this.socket) this.socket.off(event, cb);
+    }
+    this.listeners.clear();
   }
 
   emit(event, data) {
-    if (this.socket) {
-      this.socket.emit(event, data);
-    }
+    if (this.socket) this.socket.emit(event, data);
   }
 
   get id() {

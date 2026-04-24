@@ -14,8 +14,8 @@ class SpectatorScene extends Phaser.Scene {
     var self = this;
 
     var imgAspect = 2412 / 1760;
-    var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
+    var displayW = displayH * imgAspect;
     var zoom = Math.min(w / displayW, h / displayH);
     this.zoom = zoom;
 
@@ -26,10 +26,6 @@ class SpectatorScene extends Phaser.Scene {
     var outer = addW(this.add.graphics().setDepth(-3));
     outer.fillStyle(0x050a10, 1);
     outer.fillRect(-3000, -3000, 6000, 6000);
-
-    var imgAspect = 2412 / 1760;
-    var displayH = CONSTANTS.WORLD_SIZE;
-    var displayW = displayH * imgAspect;
     if (this.textures.exists('map-bg')) {
       addW(this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2));
     } else {
@@ -81,6 +77,11 @@ class SpectatorScene extends Phaser.Scene {
       this.stateTime = 0;
     }.bind(this));
     window.network.on('game:end', function() { this.scene.start('Lobby'); }.bind(this));
+
+    this.events.once('shutdown', function() {
+      window.network.off('game:state');
+      window.network.off('game:end');
+    }, this);
   }
 
   update(time, delta) {
@@ -136,8 +137,10 @@ class SpectatorScene extends Phaser.Scene {
     shadow.fillStyle(0x000000, 0.3);
     shadow.fillEllipse(size * 0.15, size * 0.35, size * 0.9, size * 0.28);
     var sprite = this.add.image(0, 0, 'player').setDisplaySize(size, size);
-    var nameLabel = this.add.text(0, -(size * 0.6), data.name || '', {
-      fontSize: '20px', color: '#ffffff', backgroundColor: '#00000088', padding: { x: 4, y: 2 },
+    var nameLabel = this.add.text(0, -(size * 0.65), data.name || '', {
+      fontFamily: 'Fredoka, sans-serif',
+      fontSize: Math.round(size * 0.38) + 'px',
+      color: '#ffffff', backgroundColor: '#00000099', padding: { x: 8, y: 3 },
     }).setOrigin(0.5);
     container.add([shadow, sprite, nameLabel]);
 
