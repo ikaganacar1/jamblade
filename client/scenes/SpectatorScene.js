@@ -95,8 +95,7 @@ class SpectatorScene extends Phaser.Scene {
     this.timerText.setText('T ' + min + ':' + (sec < 10 ? '0' : '') + sec);
 
     var players = state.players;
-    var total = Object.keys(players).length;
-    this.playerCountText.setText('👥 ' + total);
+    this.playerCountText.setText('👥 ' + Object.keys(players).length);
 
     for (var pid in players) {
       var p = players[pid];

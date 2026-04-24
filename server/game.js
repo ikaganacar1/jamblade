@@ -2,7 +2,7 @@ const C = require('../shared/constants');
 const { generateObstacles, generateSpawnPoints, isInsideMap } = require('./map');
 
 class Game {
-  constructor(io, playerEntries, onGameEnd, runnerSkinCount, hunterSkinCount) {
+  constructor(io, playerEntries, onGameEnd) {
     this.io = io;
     this.onGameEnd = onGameEnd;
     this.tickTimer = null;
@@ -14,10 +14,10 @@ class Game {
     const spawns = generateSpawnPoints(playerIds);
 
     this.players = new Map();
-    for (const [id, { name, team, skin }] of playerEntries) {
+    for (const [id, { name }] of playerEntries) {
       const spawn = spawns[id];
       this.players.set(id, {
-        name, team, skin,
+        name,
         x: spawn.x, y: spawn.y,
         vx: 0, vy: 0,
         joystickAngle: 0,
@@ -36,7 +36,7 @@ class Game {
   getFullState() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin, spinSpeed: p.spinSpeed };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed };
     }
     return { players: playersData, obstacles: this.obstacles };
   }
@@ -44,7 +44,7 @@ class Game {
   start() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, team: p.team, skin: p.skin, spinSpeed: p.spinSpeed };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed };
     }
 
     this.io.emit('game:start', { players: playersData, obstacles: this.obstacles });
@@ -167,7 +167,7 @@ class Game {
       players[id] = {
         x: p.x, y: p.y,
         vx: p.vx, vy: p.vy,
-        team: p.team, name: p.name, skin: p.skin,
+        name: p.name,
         spinSpeed: p.spinSpeed,
       };
     }

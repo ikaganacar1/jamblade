@@ -9,9 +9,7 @@ class GameScene extends Phaser.Scene {
 
   create() {
     var myId = window.network.id;
-    var myTeam = this.gameData.players[myId]?.team;
 
-    // Fixed camera: zoom to fit the full map, no following
     var imgAspect = 2412 / 1760;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
@@ -21,7 +19,6 @@ class GameScene extends Phaser.Scene {
 
     this.drawMap();
 
-    // Player sprites
     this.playerSprites = {};
     for (var [id, p] of Object.entries(this.gameData.players)) {
       this.createPlayerSprite(id, p);
@@ -31,17 +28,9 @@ class GameScene extends Phaser.Scene {
 
     // HUD
     var hudFont = 'Fredoka, sans-serif';
-    var teamColor = myTeam === 'hunter' ? '#ff6644' : '#f0c020';
-    var teamLabel = myTeam === 'hunter' ? '🔴 KOVALAYAN' : '🟡 KAÇAN';
 
     this.timerText = this.add.text(10, 10, '', {
       fontFamily: hudFont, fontSize: '20px', color: '#ffffff',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 },
-      fontStyle: 'bold',
-    }).setScrollFactor(0).setDepth(999);
-
-    this.teamText = this.add.text(10, 44, teamLabel, {
-      fontFamily: hudFont, fontSize: '15px', color: teamColor,
       backgroundColor: '#00000099', padding: { x: 10, y: 5 },
       fontStyle: 'bold',
     }).setScrollFactor(0).setDepth(999);
@@ -71,7 +60,6 @@ class GameScene extends Phaser.Scene {
 
     window.network.on('game:end', function(data) {
       this.joystick.destroy();
-      data.myTeam = myTeam;
       this.scene.start('Result', data);
     }.bind(this));
   }

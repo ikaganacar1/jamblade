@@ -3,11 +3,11 @@ const C = require('../shared/constants');
 class Lobby {
   constructor(io) {
     this.io = io;
-    this.players = new Map(); // socketId -> { name, ready, team, skin }
+    this.players = new Map(); // socketId -> { name, ready }
     this.spectators = new Map(); // socketId -> { name }
     this.countdownTimer = null;
     this.countdownSeconds = 0;
-    this.onGameStart = null; // callback set by index.js
+    this.onGameStart = null;
   }
 
   addPlayer(socket, name) {
@@ -15,8 +15,8 @@ class Lobby {
       socket.emit('lobby:full');
       return false;
     }
-    this.spectators.delete(socket.id); // remove from spectators if switching back
-    this.players.set(socket.id, { name, ready: false, team: null, skin: -1 });
+    this.spectators.delete(socket.id);
+    this.players.set(socket.id, { name, ready: false });
     this.broadcast();
     return true;
   }
@@ -44,44 +44,9 @@ class Lobby {
     this.broadcast();
   }
 
-  setTeam(socketId, team) {
-    const player = this.players.get(socketId);
-    if (!player) return;
-
-    // Count current hunters and runners (excluding this player's current team)
-    let hunters = 0;
-    let runners = 0;
-    for (const [id, p] of this.players) {
-      if (id === socketId) continue;
-      if (p.team === 'hunter') hunters++;
-      if (p.team === 'runner') runners++;
-    }
-
-    // Balance check: hunters <= runners (only enforce once at least one person has picked a team)
-    if (team === 'hunter' && (hunters > 0 || runners > 0) && hunters >= runners) {
-      this.io.to(socketId).emit('lobby:team-rejected', { team });
-      return;
-    }
-
-    player.team = team;
-    // Reset skin when switching teams
-    player.skin = -1;
-    // Reset ready when team changes
-    player.ready = false;
-    this.broadcast();
-    this.checkAllReady();
-  }
-
-  setSkin(socketId, skin) {
-    const player = this.players.get(socketId);
-    if (!player) return;
-    player.skin = skin;
-    this.broadcast();
-  }
-
   setReady(socketId, ready) {
     const player = this.players.get(socketId);
-    if (!player || !player.team) return; // must have a team to ready up
+    if (!player) return;
     player.ready = ready;
     this.broadcast();
     this.checkAllReady();
@@ -92,12 +57,10 @@ class Lobby {
       this.cancelCountdown();
       return;
     }
-    const values = [...this.players.values()];
-    const allReady = values.every((p) => p.ready && p.team);
-    const hasHunter = values.some((p) => p.team === 'hunter');
-    if (allReady && hasHunter && !this.countdownTimer) {
+    const allReady = [...this.players.values()].every((p) => p.ready);
+    if (allReady && !this.countdownTimer) {
       this.startCountdown();
-    } else if (!allReady || !hasHunter) {
+    } else if (!allReady) {
       this.cancelCountdown();
     }
   }
@@ -129,7 +92,7 @@ class Lobby {
   broadcast() {
     const players = [];
     for (const [id, p] of this.players) {
-      players.push({ id, name: p.name, ready: p.ready, team: p.team, skin: p.skin });
+      players.push({ id, name: p.name, ready: p.ready });
     }
     const spectators = [];
     for (const [id, s] of this.spectators) {
@@ -140,10 +103,6 @@ class Lobby {
 
   getPlayerIds() {
     return [...this.players.keys()];
-  }
-
-  getPlayerName(id) {
-    return this.players.get(id)?.name || 'Unknown';
   }
 
   clear() {

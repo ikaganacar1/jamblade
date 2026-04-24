@@ -9,9 +9,6 @@ class LobbyScene extends Phaser.Scene {
     var font = 'Fredoka, sans-serif';
     var self = this;
 
-    this.mySkin = -1;
-    this.hunterCount = 0;
-    this.runnerCount = 0;
     this.isSpectator = false;
 
     // ── BACKGROUND ──────────────────────────────────────
@@ -20,39 +17,27 @@ class LobbyScene extends Phaser.Scene {
     bg.fillRect(0, 0, w, h);
 
     // Divider line
-    var div = this.add.graphics();
-    div.lineStyle(2, 0xcc7700, 0.5);
-    div.lineBetween(400, 0, 400, h);
+    this.add.graphics().lineStyle(2, 0xcc7700, 0.5).lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
     this.add.text(14, 10, 'JamBlade', {
       fontFamily: font, fontSize: '30px', color: '#FF85BB',
       fontStyle: 'bold', stroke: '#021A54', strokeThickness: 3,
     });
-    this.add.text(14, 42, 'Sakın Yakalanma!', {
-      fontFamily: font, fontSize: '11px', color: '#7a3300',
-    });
 
-    // Team count header (Kept in case server still tracks teams)
-    this.teamHeader = this.add.text(200, 62, '', {
-      fontFamily: font, fontSize: '13px', color: '#3a1500', align: 'center',
-    }).setOrigin(0.5, 0);
-
-    // Player list background (sized for up to 15 players)
     var listBg = this.add.graphics();
     listBg.fillStyle(0x000000, 0.22);
-    listBg.fillRoundedRect(8, 76, 385, 248, 8);
+    listBg.fillRoundedRect(8, 50, 385, 275, 8);
 
-    this.playerListTitle = this.add.text(200, 82, 'Oyuncular', {
+    this.playerListTitle = this.add.text(200, 56, 'Oyuncular', {
       fontFamily: font, fontSize: '12px', color: '#ffddaa', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
-    this.playerListText = this.add.text(200, 98, 'Bağlanılıyor...', {
+    this.playerListText = this.add.text(200, 74, 'Bağlanılıyor...', {
       fontFamily: font, fontSize: '11px', color: '#fff0cc',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
 
-    // Countdown
     this.countdownText = this.add.text(200, 340, '', {
       fontFamily: font, fontSize: '15px', color: '#660000', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
@@ -60,7 +45,6 @@ class LobbyScene extends Phaser.Scene {
     // ── RIGHT PANEL ──────────────────────────────────────
     var rx = 415;
 
-    // Name
     this.add.text(rx, 10, 'İsmin:', {
       fontFamily: font, fontSize: '10px', color: '#7a3300', fontStyle: 'bold',
     });
@@ -83,16 +67,7 @@ class LobbyScene extends Phaser.Scene {
       window.network.emit('name:update', { name: self.playerName });
     });
 
-    // Skin section
-    this.skinLabel = this.add.text(rx, 68, 'Skin:', {
-      fontFamily: font, fontSize: '10px', color: '#7a3300', fontStyle: 'bold',
-    }).setAlpha(0);
-
-    this.skinPanelGraphics = this.add.graphics();
-    this.skinSprites = [];
-    this.skinSelectionGraphics = this.add.graphics();
-
-    // Ready button
+    // ── READY BUTTON ────────────────────────────────────
     this.isReady = false;
     this.readyBtn = this.add.text(606, h - 38, 'HAZIR DEĞİL', {
       fontFamily: font, fontSize: '17px', color: '#ffddaa', fontStyle: 'bold',
@@ -103,13 +78,13 @@ class LobbyScene extends Phaser.Scene {
       self.isReady = !self.isReady;
       self.readyBtn.setText(self.isReady ? '✓ HAZIR' : 'HAZIR DEĞİL');
       self.readyBtn.setStyle({
-        color: self.isReady ? '#00ff88' : '#aaaaaa',
-        backgroundColor: self.isReady ? '#0a4422' : '#222222',
+        color: self.isReady ? '#00ff88' : '#ffddaa',
+        backgroundColor: self.isReady ? '#0a4422' : '#7a2200',
       });
       window.network.emit('ready', { ready: self.isReady });
     });
 
-    // Seyirci button
+    // ── SPECTATOR ────────────────────────────────────────
     this.spectatorBtn = this.add.text(606, h - 78, '👁  SEYİRCİ OL', {
       fontFamily: font, fontSize: '14px', color: '#aaddff', fontStyle: 'bold',
       backgroundColor: '#003355', padding: { x: 20, y: 8 },
@@ -118,12 +93,8 @@ class LobbyScene extends Phaser.Scene {
     this.spectatorBtn.on('pointerdown', function() {
       if (self.isSpectator) return;
       self.isSpectator = true;
-      
-      // Removed references to self.hunterBtn and self.runnerBtn here
       self.readyBtn.setVisible(false);
       self.spectatorBtn.setAlpha(0).disableInteractive();
-      self.buildSkinGrid(); // clears skin grid
-      self.skinLabel.setAlpha(0);
       self.spectatorStatusText.setAlpha(1);
       self.backToPlayerBtn.setAlpha(1);
       window.network.emit('spectate', { name: self.playerName });
@@ -134,7 +105,6 @@ class LobbyScene extends Phaser.Scene {
       align: 'center', lineSpacing: 4,
     }).setOrigin(0.5).setAlpha(0);
 
-    // Back to player button (only visible in spectator mode)
     this.backToPlayerBtn = this.add.text(606, h - 78, 'OYUNCU OL', {
       fontFamily: font, fontSize: '14px', color: '#ffddaa', fontStyle: 'bold',
       backgroundColor: '#552200', padding: { x: 20, y: 8 },
@@ -144,27 +114,21 @@ class LobbyScene extends Phaser.Scene {
       if (!self.isSpectator) return;
       self.isSpectator = false;
       self.isReady = false;
-      
-      // Removed references to self.hunterBtn and self.runnerBtn here
       self.readyBtn.setVisible(true).setText('HAZIR DEĞİL').setStyle({ color: '#ffddaa', backgroundColor: '#7a2200' });
-      // Restore spectator button
-      self.spectatorBtn.setStyle({ color: '#aaddff', backgroundColor: '#003355' }).setText('👁  SEYİRCİ OL').setAlpha(1).setInteractive({ useHandCursor: true });
-      // Hide spectator UI
+      self.spectatorBtn.setAlpha(1).setInteractive({ useHandCursor: true });
       self.spectatorStatusText.setAlpha(0);
       self.backToPlayerBtn.setAlpha(0);
-      // Re-join as player
       window.network.emit('join', { name: self.playerName });
     });
 
-    // ── POPUP ──────────────────────────────────────────
-    this.popupBg = this.add.graphics().setDepth(500).setAlpha(0);
+    // ── POPUP ────────────────────────────────────────────
     this.popupText = this.add.text(w / 2, h / 2, '', {
       fontFamily: font, fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
       backgroundColor: '#cc2200dd', padding: { x: 28, y: 14 },
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(501).setAlpha(0);
 
-    // ── MENU MUSIC ──────────────────────────────────────
+    // ── MENU MUSIC ───────────────────────────────────────
     if (!this.sound.get('sfx-menu')) {
       this.menuMusic = this.sound.add('sfx-menu', { volume: 0.3, loop: true });
     } else {
@@ -172,23 +136,19 @@ class LobbyScene extends Phaser.Scene {
     }
     if (!this.menuMusic.isPlaying) this.menuMusic.play();
 
-    // ── JOIN ──────────────────────────────────────────────
     window.network.emit('join', { name: this.playerName });
 
     // ── SOCKET EVENTS ────────────────────────────────────
     window.network.on('lobby:update', function(data) {
       var players = data.players;
-      // Title
       self.playerListTitle.setText('OYUNCULAR (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
 
-      // Player list
       var lines = [];
-      for (var k = 0; k < players.length; k++) {
-        var p = players[k];
-        var badge = p.team === 'hunter' ? '🔴 KOVALAYAN' : p.team === 'runner' ? '🟡 KAÇAN' : '⚪ ?';
+      for (var i = 0; i < players.length; i++) {
+        var p = players[i];
         var ready = p.ready ? ' ✓' : '';
         var me = p.id === window.network.id ? ' ← sen' : '';
-        lines.push(badge + ' ' + p.name + ready + me);
+        lines.push('⚪ ' + p.name + ready + me);
       }
       var spectators = data.spectators || [];
       for (var sp = 0; sp < spectators.length; sp++) {
@@ -203,20 +163,12 @@ class LobbyScene extends Phaser.Scene {
     });
 
     window.network.on('lobby:countdown', function(data) {
-      if (data.seconds > 0) {
-        self.countdownText.setText('Oyun ' + data.seconds + 's içinde başlıyor!');
-      } else {
-        self.countdownText.setText('');
-      }
+      self.countdownText.setText(data.seconds > 0 ? 'Oyun ' + data.seconds + 's içinde başlıyor!' : '');
     });
 
     window.network.on('game:start', function(data) {
       if (self.menuMusic) self.menuMusic.stop();
-      if (self.isSpectator) {
-        self.scene.start('Spectator', data);
-      } else {
-        self.scene.start('Countdown', data);
-      }
+      self.scene.start(self.isSpectator ? 'Spectator' : 'Countdown', data);
     });
 
     window.network.on('game:spectate', function(data) {
@@ -236,104 +188,10 @@ class LobbyScene extends Phaser.Scene {
   showPopup(msg) {
     var self = this;
     this.popupText.setText(msg).setAlpha(1).setScale(0.7);
-    this.tweens.add({
-      targets: this.popupText, scale: 1, duration: 200, ease: 'Back.easeOut',
-    });
+    this.tweens.add({ targets: this.popupText, scale: 1, duration: 200, ease: 'Back.easeOut' });
     if (this._popupTimer) this._popupTimer.remove();
     this._popupTimer = this.time.delayedCall(2000, function() {
-      self.tweens.add({
-        targets: self.popupText, alpha: 0, duration: 400, ease: 'Quad.easeIn',
-      });
+      self.tweens.add({ targets: self.popupText, alpha: 0, duration: 400, ease: 'Quad.easeIn' });
     });
-  }
-
-  buildSkinGrid() {
-    for (var i = 0; i < this.skinSprites.length; i++) {
-      this.skinSprites[i].destroy();
-    }
-    this.skinSprites = [];
-    this.skinSelectionGraphics.clear();
-    this.skinPanelGraphics.clear();
-
-    this.skinLabel.setAlpha(1);
-
-    var self = this;
-
-    // DEFINED GLOBAL SKIN VARIABLES HERE - Edit to match your assets
-    var skins = CONSTANTS.SKINS || ['skin_0.png', 'skin_1.png']; // Fallback if CONSTANTS.SKINS doesn't exist
-    var prefix = 'player-';
-    var folder = 'skins';
-    var teamPrefix = 'player';
-    var panelColor = 0xffe0cc; // Single unified color since teams are gone
-
-    var allLoaded = skins.length > 0 && this.textures.exists(prefix + '0');
-    if (!allLoaded && skins.length > 0) {
-      this.skinLabel.setText('SKİNLER YÜKLENİYOR...');
-      for (var k = 0; k < skins.length; k++) {
-        this.load.spritesheet(prefix + k, 'assets/' + folder + '/' + skins[k], { frameWidth: 256, frameHeight: 256 });
-      }
-      this.load.once('complete', function() {
-        for (var ai = 0; ai < skins.length; ai++) {
-          var aKey = prefix + ai;
-          if (self.textures.exists(aKey) && !self.anims.exists(teamPrefix + '-walk-' + ai)) {
-            self.anims.create({ key: teamPrefix + '-walk-' + ai, frames: self.anims.generateFrameNumbers(aKey, { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
-            self.anims.create({ key: teamPrefix + '-idle-' + ai, frames: [{ key: aKey, frame: 0 }], frameRate: 1 });
-          }
-        }
-        self.skinLabel.setText('SKİN SEÇ');
-        self.buildSkinGrid();
-      }, this);
-      this.load.start();
-      return;
-    }
-
-    var size = 78;
-    var gap = 6;
-    var perRow = 4;
-    var gridW = perRow * size + (perRow - 1) * gap;
-    var startX = 421 + (391 - gridW) / 2;
-    var startY = 94;
-    var rows = Math.ceil(skins.length / perRow);
-    var gridH = rows * size + (rows - 1) * gap;
-
-    this.skinPanelGraphics.fillStyle(panelColor, 0.2);
-    this.skinPanelGraphics.fillRoundedRect(startX - 8, startY - 8, gridW + 16, gridH + 16, 8);
-
-    for (var j = 0; j < skins.length; j++) {
-      var key = prefix + j;
-      if (!this.textures.exists(key)) continue;
-      var col = j % perRow;
-      var row = Math.floor(j / perRow);
-      var x = startX + col * (size + gap) + size / 2;
-      var y = startY + row * (size + gap) + size / 2;
-
-      var spr = this.add.sprite(x, y, key, 0).setDisplaySize(size, size)
-        .setInteractive({ useHandCursor: true });
-
-      (function(skinIndex, sx, sy) {
-        spr.on('pointerdown', function() {
-          self.mySkin = skinIndex;
-          window.network.emit('skin:select', { skin: skinIndex });
-          self.highlightSkin(sx, sy, size);
-        });
-        spr.on('pointerover', function() { spr.setAlpha(0.75); });
-        spr.on('pointerout', function() { spr.setAlpha(1); });
-      })(j, x, y);
-
-      this.skinSprites.push(spr);
-    }
-
-    if (this.mySkin >= 0 && this.mySkin < this.skinSprites.length) {
-      var sel = this.skinSprites[this.mySkin];
-      this.highlightSkin(sel.x, sel.y, size);
-    }
-  }
-
-  highlightSkin(x, y, size) {
-    this.skinSelectionGraphics.clear();
-    this.skinSelectionGraphics.lineStyle(3, 0xf0c020, 1);
-    this.skinSelectionGraphics.strokeRect(x - size / 2 - 3, y - size / 2 - 3, size + 6, size + 6);
-    this.skinSelectionGraphics.lineStyle(1, 0xffffff, 0.4);
-    this.skinSelectionGraphics.strokeRect(x - size / 2 - 5, y - size / 2 - 5, size + 10, size + 10);
   }
 }

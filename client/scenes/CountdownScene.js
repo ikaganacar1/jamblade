@@ -19,25 +19,14 @@ class CountdownScene extends Phaser.Scene {
     var font = 'Fredoka, sans-serif';
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
-    var isHunter = myData && myData.team === 'hunter';
 
-    // Background gradient — matches lobby orange
     var bg = this.add.graphics();
     bg.fillGradientStyle(0xFFAA00, 0xFFAA00, 0xFFD786, 0xFFD786, 1);
     bg.fillRect(0, 0, w, h);
 
-    // Team label
-    var teamName = isHunter ? 'KOVALAYAN' : 'KAÇAN';
-    var teamColor = isHunter ? '#7a0000' : '#003300';
-    this.add.text(w / 2, 50, teamName, {
-      fontFamily: font, fontSize: '42px', color: teamColor,
-      fontStyle: 'bold', stroke: '#000000', strokeThickness: 5,
-    }).setOrigin(0.5);
-
-    // Team subtitle
-    var teamDesc = isHunter ? 'Kaçanları yakala!' : 'Yakalanmadan kaç!';
-    this.add.text(w / 2, 90, teamDesc, {
-      fontFamily: font, fontSize: '14px', color: '#5a2200',
+    this.add.text(w / 2, 50, 'HAZIRLANIYOR!', {
+      fontFamily: font, fontSize: '36px', color: '#3a1500',
+      fontStyle: 'bold', stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5);
 
     // Avatar sprite
