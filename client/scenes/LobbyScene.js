@@ -21,20 +21,20 @@ class LobbyScene extends Phaser.Scene {
     this.add.graphics().lineStyle(2, 0xFF85BB, 0.5).lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
-    this.add.text(14, 10, 'JamBlade', {
-      fontFamily: 'JapanBrush', fontSize: '38px', color: '#FF85BB',
-      stroke: '#021A54', strokeThickness: 3,
-    });
+    this.add.text(200, 4, 'JamBlade', {
+      fontFamily: 'JapanBrush', fontSize: '72px', color: '#FF85BB',
+      stroke: '#021A54', strokeThickness: 4,
+    }).setOrigin(0.5, 0);
 
     var listBg = this.add.graphics();
     listBg.fillStyle(0x000000, 0.22);
-    listBg.fillRoundedRect(8, 50, 385, 275, 8);
+    listBg.fillRoundedRect(8, 82, 385, 242, 8);
 
-    this.playerListTitle = this.add.text(200, 56, 'Oyuncular', {
+    this.playerListTitle = this.add.text(200, 88, 'Oyuncular', {
       fontFamily: font, fontSize: '12px', color: '#FF85BB', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
-    this.playerListText = this.add.text(200, 74, 'Bağlanılıyor...', {
+    this.playerListText = this.add.text(200, 104, 'Bağlanılıyor...', {
       fontFamily: font, fontSize: '11px', color: '#FF85BB',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
