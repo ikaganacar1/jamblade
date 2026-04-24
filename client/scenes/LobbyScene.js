@@ -70,14 +70,14 @@ class LobbyScene extends Phaser.Scene {
 
     // ── READY BUTTON ────────────────────────────────────
     this.isReady = false;
-    this.readyBtn = this.add.text(606, h - 38, 'HAZIR DEĞİL', {
+    this.readyBtn = this.add.text(606, h - 38, 'HAZIR VER', {
       fontFamily: font, fontSize: '17px', color: '#FF85BB', fontStyle: 'bold',
       backgroundColor: '#7a2200', padding: { x: 28, y: 10 },
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
 
     this.readyBtn.on('pointerdown', function() {
       self.isReady = !self.isReady;
-      self.readyBtn.setText(self.isReady ? '✓ HAZIR' : 'HAZIR DEĞİL');
+      self.readyBtn.setText(self.isReady ? '✓ HAZIR' : 'HAZIR VER');
       self.readyBtn.setStyle({
         color: self.isReady ? '#00ff88' : '#FF85BB',
         backgroundColor: self.isReady ? '#0a4422' : '#7a2200',
@@ -115,7 +115,7 @@ class LobbyScene extends Phaser.Scene {
       if (!self.isSpectator) return;
       self.isSpectator = false;
       self.isReady = false;
-      self.readyBtn.setVisible(true).setText('HAZIR DEĞİL').setStyle({ color: '#FF85BB', backgroundColor: '#7a2200' });
+      self.readyBtn.setVisible(true).setText('HAZIR VER').setStyle({ color: '#FF85BB', backgroundColor: '#7a2200' });
       self.spectatorBtn.setAlpha(1).setInteractive({ useHandCursor: true });
       self.spectatorStatusText.setAlpha(0);
       self.backToPlayerBtn.setAlpha(0);
