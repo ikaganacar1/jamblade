@@ -82,6 +82,10 @@ io.on('connection', (socket) => {
     if (game) game.handleInput(socket.id, data);
   });
 
+  socket.on('launch', (data) => {
+    if (game) game.handleLaunch(socket.id, data);
+  });
+
   socket.on('disconnect', () => {
     console.log('Player disconnected:', socket.id);
     if (game && game.hasPlayer(socket.id)) {

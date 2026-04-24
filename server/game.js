@@ -20,9 +20,10 @@ class Game {
         name,
         x: spawn.x, y: spawn.y,
         vx: 0, vy: 0,
-        joystickAngle: 0,
+        joystickAngle: Math.atan2(-spawn.y, -spawn.x), // default aim toward center
         moving: false,
         spinSpeed: 100,
+        state: 'launching',
       });
     }
 
@@ -36,7 +37,7 @@ class Game {
   getFullState() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state };
     }
     return { players: playersData, obstacles: this.obstacles };
   }
@@ -44,7 +45,7 @@ class Game {
   start() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state };
     }
 
     this.io.emit('game:start', { players: playersData, obstacles: this.obstacles });
@@ -63,6 +64,7 @@ class Game {
 
     // ── Movement & spin decay ──────────────────────────────────────
     for (const [, p] of entries) {
+      if (p.state === 'launching') continue;
       // Joystick: tiny force nudge
       if (p.moving) {
         p.vx += Math.cos(p.joystickAngle) * C.JOYSTICK_FORCE;
@@ -119,7 +121,7 @@ class Game {
         const dy = p2.y - p1.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist < minDist && dist > 0.01) {
+        if (dist < minDist && dist > 0.01 && p1.state === 'active' && p2.state === 'active') {
           const nx = dx / dist;
           const ny = dy / dist;
 
@@ -154,6 +156,16 @@ class Game {
     this.broadcastState();
   }
 
+  handleLaunch(socketId, { speed, angle }) {
+    const player = this.players.get(socketId);
+    if (!player || player.state !== 'launching') return;
+    // Map bar 0–1 to 30–100% of max speed so even min-bar gives some movement
+    const launchSpeed = (0.3 + speed * 0.7) * C.MAX_SPEED;
+    player.vx = Math.cos(angle) * launchSpeed;
+    player.vy = Math.sin(angle) * launchSpeed;
+    player.state = 'active';
+  }
+
   handleInput(socketId, { angle, moving }) {
     const player = this.players.get(socketId);
     if (!player) return;
@@ -169,6 +181,7 @@ class Game {
         vx: p.vx, vy: p.vy,
         name: p.name,
         spinSpeed: p.spinSpeed,
+        state: p.state,
       };
     }
     this.io.emit('game:state', { players, timer: this.timeRemaining });

@@ -9,6 +9,7 @@ class GameScene extends Phaser.Scene {
 
   create() {
     var myId = window.network.id;
+    var self = this;
 
     var imgAspect = 2412 / 1760;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
@@ -19,30 +20,77 @@ class GameScene extends Phaser.Scene {
 
     this.drawMap();
 
+    // ── Launcher placeholders (world space, below players) ────────
+    this.launcherPositions = {};
+    for (var id in this.gameData.players) {
+      var p0 = this.gameData.players[id];
+      this.launcherPositions[id] = { x: p0.x, y: p0.y };
+      var lw = 260, lh = 150;
+      var lg = this.add.graphics().setDepth(50);
+      lg.fillStyle(0x0a1a3a, 0.85);
+      lg.lineStyle(4, 0x3399ff, 1);
+      lg.fillRoundedRect(p0.x - lw / 2, p0.y - lh / 2, lw, lh, 14);
+      lg.strokeRoundedRect(p0.x - lw / 2, p0.y - lh / 2, lw, lh, 14);
+      // Corner accents
+      lg.lineStyle(2, 0x66ccff, 0.6);
+      lg.strokeRect(p0.x - lw / 2 + 8, p0.y - lh / 2 + 8, lw - 16, lh - 16);
+    }
+
+    // Player sprites
     this.playerSprites = {};
-    for (var [id, p] of Object.entries(this.gameData.players)) {
-      this.createPlayerSprite(id, p);
+    for (var id2 in this.gameData.players) {
+      this.createPlayerSprite(id2, this.gameData.players[id2]);
     }
 
     this.joystick = new VirtualJoystick(this);
 
-    // HUD
-    var hudFont = 'Fredoka, sans-serif';
+    // ── Aim arrow (world space, updated each frame) ───────────────
+    this.aimArrow = this.add.graphics().setDepth(90);
 
+    // ── Power bar (HUD) ───────────────────────────────────────────
+    var hf = 'Fredoka, sans-serif';
+    this.powerBarG = this.add.graphics().setScrollFactor(0).setDepth(1001);
+    this.powerBarLabelTop = this.add.text(755, 68, 'GÜÇ', {
+      fontFamily: hf, fontSize: '13px', color: '#ffffff', fontStyle: 'bold',
+    }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(1002);
+    this.powerBarLabelBot = this.add.text(755, 302, 'TIKLA!', {
+      fontFamily: hf, fontSize: '11px', color: '#aaddff', fontStyle: 'bold',
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1002);
+    this.aimHintText = this.add.text(755, 315, 'yön: sol', {
+      fontFamily: hf, fontSize: '10px', color: '#88aacc',
+    }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(1002);
+
+    this.myLaunching = true;
+    this.barProgress = 0;
+    this.barDir = 1;
+
+    // Tap right half → launch
+    this.input.on('pointerdown', function(ptr) {
+      if (!self.myLaunching) return;
+      if (ptr.x < self.cameras.main.width * 0.5) return; // left = joystick
+      window.network.emit('launch', {
+        speed: self.barProgress,
+        angle: self.joystick.angle,
+      });
+      self.myLaunching = false;
+      self.powerBarG.clear();
+      self.powerBarLabelTop.setAlpha(0);
+      self.powerBarLabelBot.setAlpha(0);
+      self.aimHintText.setAlpha(0);
+      self.aimArrow.clear();
+    });
+
+    // ── HUD ───────────────────────────────────────────────────────
     this.timerText = this.add.text(10, 10, '', {
-      fontFamily: hudFont, fontSize: '20px', color: '#ffffff',
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 },
-      fontStyle: 'bold',
+      fontFamily: hf, fontSize: '20px', color: '#ffffff',
+      backgroundColor: '#00000099', padding: { x: 10, y: 5 }, fontStyle: 'bold',
     }).setScrollFactor(0).setDepth(999);
 
     // Input send
     this.inputTimer = this.time.addEvent({
       delay: CONSTANTS.TICK_INTERVAL,
       callback: function() {
-        window.network.emit('input', {
-          angle: this.joystick.angle,
-          moving: this.joystick.moving,
-        });
+        window.network.emit('input', { angle: this.joystick.angle, moving: this.joystick.moving });
       },
       callbackScope: this,
       loop: true,
@@ -65,8 +113,34 @@ class GameScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    if (!this.latestState) return;
     var myId = window.network.id;
+
+    // ── Power bar + aim arrow (while waiting to launch) ──────────
+    if (this.myLaunching) {
+      this.barProgress += this.barDir * delta / 750;
+      if (this.barProgress >= 1) { this.barProgress = 1; this.barDir = -1; }
+      if (this.barProgress <= 0) { this.barProgress = 0; this.barDir = 1; }
+      this.drawPowerBar(this.barProgress);
+
+      var mySpawn = this.launcherPositions[myId];
+      if (mySpawn) {
+        var ang = this.joystick.angle;
+        var arrowLen = 220;
+        var ax = mySpawn.x + Math.cos(ang) * arrowLen;
+        var ay = mySpawn.y + Math.sin(ang) * arrowLen;
+        this.aimArrow.clear();
+        this.aimArrow.lineStyle(10, 0xffee00, 0.9);
+        this.aimArrow.lineBetween(mySpawn.x, mySpawn.y, ax, ay);
+        this.aimArrow.fillStyle(0xffee00, 0.9);
+        this.aimArrow.fillTriangle(
+          ax, ay,
+          ax - Math.cos(ang - 0.45) * 50, ay - Math.sin(ang - 0.45) * 50,
+          ax - Math.cos(ang + 0.45) * 50, ay - Math.sin(ang + 0.45) * 50
+        );
+      }
+    }
+
+    if (!this.latestState) return;
     var state = this.latestState;
 
     // Timer
@@ -74,15 +148,13 @@ class GameScene extends Phaser.Scene {
     var sec = state.timer % 60;
     this.timerText.setText('T ' + min + ':' + (sec < 10 ? '0' : '') + sec);
 
-    // Interpolation timing
     this.stateTime += delta;
     var t = Math.min(this.stateTime / CONSTANTS.TICK_INTERVAL, 1);
 
-    for (var [id, p] of Object.entries(state.players)) {
+    for (var id in state.players) {
+      var p = state.players[id];
       var spr = this.playerSprites[id];
-      if (!spr) {
-        spr = this.createPlayerSprite(id, p);
-      }
+      if (!spr) spr = this.createPlayerSprite(id, p);
 
       if (this.prevState && this.prevState.players[id]) {
         var prev = this.prevState.players[id];
@@ -93,15 +165,17 @@ class GameScene extends Phaser.Scene {
         spr.container.y += (p.y - spr.container.y) * 0.2;
       }
 
-      // Spin the sprite locally based on server spinSpeed
-      spr.localRotation = (spr.localRotation || 0) + (p.spinSpeed / 100) * 18 * (delta / 1000);
-      spr.sprite.rotation = spr.localRotation;
+      // Only spin active players; launching players sit still
+      if (p.state === 'active') {
+        spr.localRotation = (spr.localRotation || 0) + (p.spinSpeed / 100) * 18 * (delta / 1000);
+        spr.sprite.rotation = spr.localRotation;
+      }
 
       spr.nameLabel.setText(p.name);
     }
 
     // Remove disconnected players
-    for (var pid of Object.keys(this.playerSprites)) {
+    for (var pid in this.playerSprites) {
       if (!state.players[pid]) {
         this.playerSprites[pid].container.destroy();
         delete this.playerSprites[pid];
@@ -109,8 +183,38 @@ class GameScene extends Phaser.Scene {
     }
   }
 
+  drawPowerBar(progress) {
+    var g = this.powerBarG;
+    g.clear();
+    var bx = 730, by = 72, bw = 50, bh = 226;
+
+    // Dark background
+    g.fillStyle(0x000000, 0.75);
+    g.fillRoundedRect(bx - 6, by - 4, bw + 12, bh + 8, 8);
+
+    // Gradient strips: red (bottom) → green (top)
+    var strips = 24;
+    var sh = bh / strips;
+    for (var i = 0; i < strips; i++) {
+      var t = i / (strips - 1);
+      var r = Math.floor(220 * (1 - t));
+      var gr = Math.floor(210 * t);
+      g.fillStyle((r << 16) | (gr << 8) | 20, 1);
+      g.fillRect(bx, by + bh - (i + 1) * sh, bw, sh + 1);
+    }
+
+    // Moving pointer
+    var py = by + bh - progress * bh;
+    g.lineStyle(5, 0xffffff, 1);
+    g.lineBetween(bx - 4, py, bx + bw + 4, py);
+    // Side triangles
+    g.fillStyle(0xffffff, 1);
+    g.fillTriangle(bx - 4, py, bx - 16, py - 9, bx - 16, py + 9);
+    g.fillTriangle(bx + bw + 4, py, bx + bw + 16, py - 9, bx + bw + 16, py + 9);
+  }
+
   createPlayerSprite(id, data) {
-    var size = CONSTANTS.PLAYER_RADIUS * 2; // 300 world units
+    var size = CONSTANTS.PLAYER_RADIUS * 2;
     var container = this.add.container(data.x, data.y);
     var shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.3);
@@ -128,13 +232,11 @@ class GameScene extends Phaser.Scene {
   }
 
   drawMap() {
-    // Dark fill behind everything in case the image doesn't cover the edges
     var outer = this.add.graphics();
     outer.fillStyle(0x050a10, 1);
     outer.fillRect(-3000, -3000, 6000, 6000);
     outer.setDepth(-3);
 
-    // Map background — display at natural aspect ratio scaled to WORLD_SIZE height
     var imgAspect = 2412 / 1760;
     var displayH = CONSTANTS.WORLD_SIZE;
     var displayW = displayH * imgAspect;
