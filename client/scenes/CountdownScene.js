@@ -11,20 +11,6 @@ class CountdownScene extends Phaser.Scene {
     if (!this.cache.audio.exists('sfx-game-start')) {
       this.load.audio('sfx-game-start', 'assets/game-start.mp3');
     }
-    // Ensure my team's skins are loaded for avatar display
-    var myId = window.network.id;
-    var myData = this.gameData && this.gameData.players && this.gameData.players[myId];
-    if (myData) {
-      var isHunter = myData.team === 'hunter';
-      var skins = isHunter ? (window.hunterSkins || []) : (window.runnerSkins || []);
-      var folder = isHunter ? 'hunters' : 'runners';
-      var pfx = isHunter ? 'hunter-skin-' : 'runner-skin-';
-      for (var si = 0; si < skins.length; si++) {
-        if (!this.textures.exists(pfx + si)) {
-          this.load.spritesheet(pfx + si, 'assets/' + folder + '/' + skins[si], { frameWidth: 256, frameHeight: 256 });
-        }
-      }
-    }
   }
 
   create() {
@@ -34,18 +20,6 @@ class CountdownScene extends Phaser.Scene {
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
     var isHunter = myData && myData.team === 'hunter';
-
-    // Create skin animations if not yet created (skins may have been loaded in preload)
-    var skins = isHunter ? (window.hunterSkins || []) : (window.runnerSkins || []);
-    var teamStr = isHunter ? 'hunter' : 'runner';
-    var pfx = isHunter ? 'hunter-skin-' : 'runner-skin-';
-    for (var si = 0; si < skins.length; si++) {
-      var sk = pfx + si;
-      if (this.textures.exists(sk) && !this.anims.exists(teamStr + '-walk-' + si)) {
-        this.anims.create({ key: teamStr + '-walk-' + si, frames: this.anims.generateFrameNumbers(sk, { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
-        this.anims.create({ key: teamStr + '-idle-' + si, frames: [{ key: sk, frame: 0 }], frameRate: 1 });
-      }
-    }
 
     // Background gradient — matches lobby orange
     var bg = this.add.graphics();
@@ -68,26 +42,7 @@ class CountdownScene extends Phaser.Scene {
 
     // Avatar sprite
     if (myData) {
-      var skin = myData.skin !== undefined ? myData.skin : -1;
-      var sheetKey = null;
-      if (isHunter && skin >= 0 && this.textures.exists('hunter-skin-' + skin)) {
-        sheetKey = 'hunter-skin-' + skin;
-      } else if (!isHunter && skin >= 0 && this.textures.exists('runner-skin-' + skin)) {
-        sheetKey = 'runner-skin-' + skin;
-      }
-
-      var avatar;
-      if (sheetKey) {
-        avatar = this.add.sprite(w / 2, h / 2 - 10, sheetKey, 0).setDisplaySize(128, 128);
-        // Play idle animation
-        var idleKey = isHunter ? 'hunter-idle-' + skin : 'runner-idle-' + skin;
-        if (this.anims.exists(idleKey)) {
-          avatar.play(idleKey);
-        }
-      } else {
-        var fallbackKey = isHunter ? 'duck-hunter' : 'duck-runner';
-        avatar = this.add.image(w / 2, h / 2 - 10, fallbackKey).setDisplaySize(96, 76);
-      }
+      var avatar = this.add.image(w / 2, h / 2 - 10, 'player').setDisplaySize(96, 96);
 
       // Gentle floating animation on avatar
       this.tweens.add({

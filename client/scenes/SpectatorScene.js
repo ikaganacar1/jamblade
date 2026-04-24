@@ -7,43 +7,11 @@ class SpectatorScene extends Phaser.Scene {
     this.gameData = data;
   }
 
-  preload() {
-    if (!this.textures.exists('map-bg')) {
-      this.load.image('map-bg', 'assets/map.png');
-    }
-    var rSkins = window.runnerSkins || [];
-    var hSkins = window.hunterSkins || [];
-    for (var ri = 0; ri < rSkins.length; ri++) {
-      if (!this.textures.exists('runner-skin-' + ri))
-        this.load.spritesheet('runner-skin-' + ri, 'assets/runners/' + rSkins[ri], { frameWidth: 256, frameHeight: 256 });
-    }
-    for (var hi = 0; hi < hSkins.length; hi++) {
-      if (!this.textures.exists('hunter-skin-' + hi))
-        this.load.spritesheet('hunter-skin-' + hi, 'assets/hunters/' + hSkins[hi], { frameWidth: 256, frameHeight: 256 });
-    }
-  }
-
   create() {
     var w = this.cameras.main.width;
     var h = this.cameras.main.height;
     var font = 'Fredoka, sans-serif';
     var self = this;
-
-    // Skin animations
-    var rSkins = window.runnerSkins || [];
-    var hSkins = window.hunterSkins || [];
-    for (var ri = 0; ri < rSkins.length; ri++) {
-      if (this.textures.exists('runner-skin-' + ri) && !this.anims.exists('runner-walk-' + ri)) {
-        this.anims.create({ key: 'runner-walk-' + ri, frames: this.anims.generateFrameNumbers('runner-skin-' + ri, { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
-        this.anims.create({ key: 'runner-idle-' + ri, frames: [{ key: 'runner-skin-' + ri, frame: 0 }], frameRate: 1 });
-      }
-    }
-    for (var hi2 = 0; hi2 < hSkins.length; hi2++) {
-      if (this.textures.exists('hunter-skin-' + hi2) && !this.anims.exists('hunter-walk-' + hi2)) {
-        this.anims.create({ key: 'hunter-walk-' + hi2, frames: this.anims.generateFrameNumbers('hunter-skin-' + hi2, { start: 0, end: 3 }), frameRate: 6, repeat: -1 });
-        this.anims.create({ key: 'hunter-idle-' + hi2, frames: [{ key: 'hunter-skin-' + hi2, frame: 0 }], frameRate: 1 });
-      }
-    }
 
     var imgAspect = 2412 / 1760;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
@@ -146,13 +114,6 @@ class SpectatorScene extends Phaser.Scene {
 
       if (p.moving) {
         spr.sprite.setFlipX(Math.cos(p.angle) < 0);
-        if (spr.hasSheet) {
-          var walkKey = spr.team === 'hunter' ? 'hunter-walk-' + spr.skin : 'runner-walk-' + spr.skin;
-          if (!spr.sprite.anims.isPlaying || spr.sprite.anims.currentAnim?.key !== walkKey) spr.sprite.play(walkKey);
-        }
-      } else if (spr.hasSheet) {
-        var idleKey = spr.team === 'hunter' ? 'hunter-idle-' + spr.skin : 'runner-idle-' + spr.skin;
-        if (!spr.sprite.anims.isPlaying || spr.sprite.anims.currentAnim?.key !== idleKey) spr.sprite.play(idleKey);
       }
 
       spr.nameLabel.setText(p.name);
@@ -167,12 +128,6 @@ class SpectatorScene extends Phaser.Scene {
   }
 
   createPlayerSprite(id, data) {
-    var skin = data.skin !== undefined ? data.skin : -1;
-    var sheetKey = null;
-    if (data.team === 'hunter' && skin >= 0 && this.textures.exists('hunter-skin-' + skin)) sheetKey = 'hunter-skin-' + skin;
-    else if (data.team === 'runner' && skin >= 0 && this.textures.exists('runner-skin-' + skin)) sheetKey = 'runner-skin-' + skin;
-
-    var hasSheet = !!sheetKey;
     var container = this.add.container(data.x, data.y).setDepth(100);
 
     if (this.uiCam) this.uiCam.ignore(container);
@@ -181,15 +136,13 @@ class SpectatorScene extends Phaser.Scene {
     var shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.25);
     shadow.fillEllipse(0, 20, 36, 12);
-    var sprite = hasSheet
-      ? this.add.sprite(0, 0, sheetKey, 0).setDisplaySize(48, 48)
-      : this.add.image(0, 0, data.team === 'hunter' ? 'duck-hunter' : 'duck-runner').setDisplaySize(48, 38);
+    var sprite = this.add.image(0, 0, 'player').setDisplaySize(48, 48);
     var nameLabel = this.add.text(0, -28, data.name || '', {
       fontSize: '11px', color: '#ffffff', backgroundColor: '#00000088', padding: { x: 3, y: 1 },
     }).setOrigin(0.5);
     container.add([shadow, sprite, nameLabel]);
 
-    this.playerSprites[id] = { container, sprite, nameLabel, hasSheet, team: data.team, skin };
+    this.playerSprites[id] = { container, sprite, nameLabel };
     return this.playerSprites[id];
   }
 }
