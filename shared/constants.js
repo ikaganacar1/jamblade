@@ -13,7 +13,7 @@ const CONSTANTS = {
   FRICTION: 0.985,            // velocity multiplier per tick
   JOYSTICK_FORCE: 1.5,        // tiny force nudge per tick when joystick active
   MAX_SPEED: 28,              // max velocity magnitude per tick
-  WALL_BOUNCE: 0.55,          // speed retained on gear wall bounce
+  WALL_BOUNCE: 0.82,          // speed retained on gear wall bounce
   SPIN_DECAY: 0.04,           // spin speed lost per tick (~125s to drain fully)
   SPIN_COLLISION_LOSS: 6,     // spin lost on each hit
   SPIN_COLLISION_FACTOR: 0.12,// spin → collision impulse multiplier

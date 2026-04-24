@@ -39,7 +39,7 @@ function generateSpawnPoints(playerIds) {
   const spawns = {};
   playerIds.forEach((id, i) => {
     const angle = (i / playerIds.length) * Math.PI * 2;
-    const dist = 400;
+    const dist = 660;
     spawns[id] = { x: Math.cos(angle) * dist, y: Math.sin(angle) * dist };
   });
   return spawns;

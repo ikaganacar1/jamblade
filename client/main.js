@@ -6,13 +6,14 @@ try {
 var config = {
   type: Phaser.AUTO,
   parent: 'game-container',
+  resolution: window.devicePixelRatio || 1,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: 812,
     height: 375,
   },
-  backgroundColor: '#FFAA00',
+  backgroundColor: '#173a8b',
   scene: [BootScene, LobbyScene, CountdownScene, GameScene, ResultScene, SpectatorScene],
 };
 
