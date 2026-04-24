@@ -73,6 +73,17 @@ class GameScene extends Phaser.Scene {
     this.myLaunching = true;
     this.barProgress = 0;
     this.barDir = 1;
+    this.launchSecondsLeft = CONSTANTS.LAUNCH_TIMEOUT;
+
+    // Tick down the launch countdown every second
+    this.launchCountdown = this.time.addEvent({
+      delay: 1000,
+      repeat: CONSTANTS.LAUNCH_TIMEOUT - 1,
+      callback: function() {
+        this.launchSecondsLeft = Math.max(0, this.launchSecondsLeft - 1);
+      },
+      callbackScope: this,
+    });
 
     // Store my name for win screen
     var myData = this.gameData.players[myId];
@@ -86,6 +97,7 @@ class GameScene extends Phaser.Scene {
       self.myLaunching = false;
       self.worldBarG.clear();
       self.aimArrow.clear();
+      if (self._countLabel) { self._countLabel.setText(''); }
     });
 
     // Input ticker
@@ -116,6 +128,7 @@ class GameScene extends Phaser.Scene {
       window.network.off('game:state');
       window.network.off('game:end');
       if (this.inputTimer) this.inputTimer.remove();
+      if (this.launchCountdown) this.launchCountdown.remove();
     }, this);
   }
 
@@ -147,11 +160,11 @@ class GameScene extends Phaser.Scene {
 
         // Power bar in world space — offset toward center from launcher
         var len = Math.sqrt(spawn.x * spawn.x + spawn.y * spawn.y) || 1;
-        var nx = spawn.x / len, ny = spawn.y / len; // outward normal
-        var barCx = spawn.x - nx * 200; // 200 units toward center
+        var nx = spawn.x / len, ny = spawn.y / len;
+        var barCx = spawn.x - nx * 200;
         var barCy = spawn.y - ny * 200;
         var bw = 90, bh = 500;
-        this.drawWorldBar(barCx, barCy, bw, bh, this.barProgress);
+        this.drawWorldBar(barCx, barCy, bw, bh, this.barProgress, this.launchSecondsLeft);
       }
     }
 
@@ -199,32 +212,55 @@ class GameScene extends Phaser.Scene {
     }
   }
 
-  drawWorldBar(cx, cy, bw, bh, progress) {
+  drawWorldBar(cx, cy, bw, bh, progress, secondsLeft) {
     var g = this.worldBarG;
     g.clear();
 
+    // Countdown ring color: green → yellow → red
+    var urgent = secondsLeft <= 2;
+    var bgColor = urgent ? 0x880000 : 0x000000;
+
     // Background
-    g.fillStyle(0x000000, 0.75);
+    g.fillStyle(bgColor, 0.82);
     g.fillRoundedRect(cx - bw / 2 - 8, cy - bh / 2 - 8, bw + 16, bh + 16, 12);
 
     // Gradient strips (red bottom → green top)
     var strips = 20;
-    var sh = bh / strips;
+    var stripH = bh / strips;
     for (var i = 0; i < strips; i++) {
       var t = i / (strips - 1);
       var r = Math.floor(220 * (1 - t));
       var gr = Math.floor(200 * t);
       g.fillStyle((r << 16) | (gr << 8) | 10, 1);
-      g.fillRect(cx - bw / 2, cy + bh / 2 - (i + 1) * sh, bw, sh + 1);
+      g.fillRect(cx - bw / 2, cy + bh / 2 - (i + 1) * stripH, bw, stripH + 1);
     }
 
-    // Pointer line
+    // Pointer line + triangles
     var py = cy + bh / 2 - progress * bh;
     g.lineStyle(18, 0xffffff, 1);
     g.lineBetween(cx - bw / 2 - 6, py, cx + bw / 2 + 6, py);
     g.fillStyle(0xffffff, 1);
     g.fillTriangle(cx - bw / 2 - 6, py, cx - bw / 2 - 30, py - 18, cx - bw / 2 - 30, py + 18);
     g.fillTriangle(cx + bw / 2 + 6, py, cx + bw / 2 + 30, py - 18, cx + bw / 2 + 30, py + 18);
+
+    // Countdown number above the bar
+    var countColor = urgent ? 0xff2222 : 0xffffff;
+    var countSize = urgent ? 200 : 160;
+    g.fillStyle(countColor, 1);
+    // Draw number as a filled text approximation using a small rect indicator
+    // (actual text uses Phaser Text — update the countdown label)
+    if (!this._countLabel) {
+      this._countLabel = this.add.text(0, 0, '', {
+        fontFamily: 'Fredoka, sans-serif', fontSize: '120px',
+        color: '#ffffff', fontStyle: 'bold',
+        stroke: '#000000', strokeThickness: 12,
+      }).setOrigin(0.5).setDepth(96);
+      if (this.uiCam) this.uiCam.ignore(this._countLabel);
+    }
+    this._countLabel.setPosition(cx, cy - bh / 2 - 120);
+    this._countLabel.setText(secondsLeft > 0 ? String(secondsLeft) : '');
+    this._countLabel.setColor(urgent ? '#ff3333' : '#ffffff');
+    this._countLabel.setFontSize(urgent ? '140px' : '120px');
   }
 
   createPlayerSprite(id, data) {

@@ -29,6 +29,7 @@ class Game {
     }
 
     this.spectators = new Set();
+    this.launchTimer = null;
   }
 
   addSpectator(socketId) { this.spectators.add(socketId); }
@@ -56,6 +57,18 @@ class Game {
         this.timeRemaining--;
         if (this.timeRemaining <= 0) this.endGame();
       }, 1000);
+
+      // Auto-launch any player who hasn't launched after LAUNCH_TIMEOUT seconds
+      this.launchTimer = setTimeout(() => {
+        for (const [, p] of this.players) {
+          if (p.state === 'launching') {
+            const speed = C.MAX_SPEED * 0.3;
+            p.vx = Math.cos(p.joystickAngle) * speed;
+            p.vy = Math.sin(p.joystickAngle) * speed;
+            p.state = 'active';
+          }
+        }
+      }, C.LAUNCH_TIMEOUT * 1000);
     }, 4000);
   }
 
@@ -192,6 +205,7 @@ class Game {
   endGame(winnerName = null) {
     clearInterval(this.tickTimer);
     clearInterval(this.timerInterval);
+    clearTimeout(this.launchTimer);
 
     // If timer ran out with no explicit winner, pick highest spin player
     if (!winnerName) {
