@@ -170,9 +170,22 @@ class Game {
         p1.x -= nx * overlap; p1.y -= ny * overlap;
         p2.x += nx * overlap; p2.y += ny * overlap;
 
-        // Category-asymmetric spin damage
-        p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS * c2.spinOut * c1.spinIn);
-        p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS * c1.spinOut * c2.spinIn);
+        // Physically logical spin damage:
+        // each player loses spin proportional to how fast THE OTHER was charging at them.
+        // p1 approach: how fast p1 moves toward p2 along the collision normal
+        // p2 approach: how fast p2 moves toward p1
+        const p1Approach = Math.max(0, p1.vx * nx + p1.vy * ny);
+        const p2Approach = Math.max(0, -(p2.vx * nx + p2.vy * ny));
+        const maxSpd = C.MAX_SPEED;
+        const p1Scale = Math.min(p1Approach / maxSpd, 1.5); // how aggressively p1 charged
+        const p2Scale = Math.min(p2Approach / maxSpd, 1.5); // how aggressively p2 charged
+
+        // contact base (both always lose a little from spin-on-spin friction)
+        // + velocity penalty (defender loses spin proportional to attacker's speed)
+        const contactBase = C.SPIN_COLLISION_LOSS * 0.5;
+        const velCoeff   = C.SPIN_COLLISION_LOSS * 0.9;
+        p1.spinSpeed = Math.max(0, p1.spinSpeed - (contactBase + velCoeff * p2Scale) * c2.spinOut * c1.spinIn);
+        p2.spinSpeed = Math.max(0, p2.spinSpeed - (contactBase + velCoeff * p1Scale) * c1.spinOut * c2.spinIn);
 
         // Shake both colliding players — harder hit = bigger shake (0→0.15)
         const hitShake = Math.min(impulse / 60, 1) * 0.15;
