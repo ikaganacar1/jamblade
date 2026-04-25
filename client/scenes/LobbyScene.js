@@ -22,14 +22,14 @@ class LobbyScene extends Phaser.Scene {
     // Title hidden (logo is in the background image)
 
     var listBg = this.add.graphics();
-    listBg.fillStyle(0x000000, 0.22);
-    listBg.fillRoundedRect(8, 82, 385, 242, 8);
+    listBg.fillStyle(0x000000, 0.32);
+    listBg.fillRoundedRect(8, 94, 385, 242, 8);
 
-    this.playerListTitle = this.add.text(200, 88, 'Oyuncular', {
+    this.playerListTitle = this.add.text(200, 100, 'Oyuncular', {
       fontFamily: font, fontSize: '12px', color: '#FF85BB', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
-    this.playerListText = this.add.text(200, 104, 'Bağlanılıyor...', {
+    this.playerListText = this.add.text(200, 116, 'Bağlanılıyor...', {
       fontFamily: font, fontSize: '11px', color: '#FF85BB',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
@@ -50,7 +50,7 @@ class LobbyScene extends Phaser.Scene {
 
     this.nameTag = this.add.text(rx, 24, this.playerName, {
       fontFamily: font, fontSize: '20px', color: '#FF85BB', fontStyle: 'bold',
-      backgroundColor: '#00000018', padding: { x: 14, y: 6 },
+      backgroundColor: '#00000032', padding: { x: 14, y: 6 },
     }).setInteractive({ useHandCursor: true });
 
     this.add.text(rx, 58, 'değiştirmek için tıkla', {
@@ -61,9 +61,56 @@ class LobbyScene extends Phaser.Scene {
       self.playerName = names[Math.floor(Math.random() * names.length)];
       self.nameTag.setText(self.playerName);
       window.network.emit('name:update', { name: self.playerName });
-      // Update the player list immediately without waiting for server roundtrip
       self.refreshPlayerList();
     });
+
+    // ── CATEGORY SELECTION ───────────────────────────────
+    this.selectedCategory = 'balance';
+    this.selectedSkin = 0;
+
+    var catKeys   = ['attack', 'defence', 'stamina', 'balance'];
+    var catLabels = ['SALDIRI', 'SAVUNMA', 'STAMİNA', 'DENGE'];
+    var catBgColors = { attack: '#8B0000', defence: '#003080', stamina: '#005500', balance: '#5a4000' };
+
+    this.add.text(rx, 70, 'Tip Seç:', {
+      fontFamily: font, fontSize: '10px', color: '#FF85BB', fontStyle: 'bold',
+    });
+
+    this.catBtns = {};
+    var catBtnW = 84, catBtnGap = 7;
+    var catStartX = rx + 5;
+    for (var ci = 0; ci < catKeys.length; ci++) {
+      (function(idx) {
+        var ck = catKeys[idx];
+        var bx = catStartX + idx * (catBtnW + catBtnGap) + catBtnW / 2;
+        var btn = self.add.text(bx, 82, catLabels[idx], {
+          fontFamily: font, fontSize: '9px', color: '#ffffff', fontStyle: 'bold',
+          backgroundColor: catBgColors[ck] + 'cc',
+          padding: { x: 6, y: 5 },
+        }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true });
+
+        btn.on('pointerdown', function() {
+          self.selectedCategory = ck;
+          self.selectedSkin = 0;
+          self.updateCatButtons();
+          self.buildSkinGrid();
+          window.network.emit('category:select', { category: ck });
+          window.network.emit('skin:select', { skin: 0 });
+        });
+        self.catBtns[ck] = btn;
+      })(ci);
+    }
+    this.updateCatButtons();
+
+    // ── SKIN GRID ────────────────────────────────────────
+    this.skinSprites = [];
+    this.skinHighlight = this.add.graphics();
+    this.catDescText = this.add.text(rx + 197, 258, '', {
+      fontFamily: font, fontSize: '9px', color: '#FFCCDD',
+      align: 'center', wordWrap: { width: 385 },
+    }).setOrigin(0.5, 0);
+
+    this.buildSkinGrid();
 
     // ── READY BUTTON ────────────────────────────────────
     this.isReady = false;
@@ -139,6 +186,22 @@ class LobbyScene extends Phaser.Scene {
     // ── SOCKET EVENTS ────────────────────────────────────
     window.network.on('lobby:update', function(data) {
       self._lobbyData = data;
+      // Sync my selection from server state
+      for (var i = 0; i < data.players.length; i++) {
+        var p = data.players[i];
+        if (p.id === window.network.id) {
+          if (p.category && p.category !== self.selectedCategory) {
+            self.selectedCategory = p.category;
+            self.selectedSkin = p.skin || 0;
+            self.updateCatButtons();
+            self.buildSkinGrid();
+          } else if (p.skin !== undefined && p.skin !== self.selectedSkin) {
+            self.selectedSkin = p.skin;
+            self.highlightSkin();
+          }
+          break;
+        }
+      }
       self.refreshPlayerList();
     });
 
@@ -178,6 +241,76 @@ class LobbyScene extends Phaser.Scene {
     });
   }
 
+  updateCatButtons() {
+    var catColors = { attack: '#cc3300', defence: '#0055cc', stamina: '#008833', balance: '#997700' };
+    var catKeys = ['attack', 'defence', 'stamina', 'balance'];
+    for (var i = 0; i < catKeys.length; i++) {
+      var ck = catKeys[i];
+      var btn = this.catBtns[ck];
+      if (!btn) continue;
+      var selected = ck === this.selectedCategory;
+      btn.setStyle({
+        backgroundColor: selected ? catColors[ck] : catColors[ck] + '55',
+        color: selected ? '#ffffff' : '#aaaaaa',
+      });
+    }
+    // Update description
+    if (this.catDescText) {
+      var desc = CONSTANTS.CATEGORY_DESC[this.selectedCategory] || '';
+      this.catDescText.setText(desc);
+    }
+  }
+
+  buildSkinGrid() {
+    // Destroy old skin sprites
+    for (var i = 0; i < this.skinSprites.length; i++) this.skinSprites[i].destroy();
+    this.skinSprites = [];
+    this.skinHighlight.clear();
+
+    var cat = this.selectedCategory;
+    var self = this;
+    var skinSize = 72;
+    var gap = 10;
+    var cols = 4;
+    var totalW = cols * skinSize + (cols - 1) * gap;
+    var startX = 415 + (397 - totalW) / 2;
+    var startY = 110;
+
+    for (var si = 0; si < 4; si++) {
+      (function(idx) {
+        var col = idx % 2, row = Math.floor(idx / 2);
+        // 2x2 layout
+        var sx = startX + col * (skinSize + gap) + skinSize / 2;
+        var sy = startY + row * (skinSize + gap) + skinSize / 2;
+        var key = 'char-' + cat + '-' + idx;
+        if (!self.textures.exists(key)) return;
+
+        var spr = self.add.image(sx, sy, key)
+          .setDisplaySize(skinSize, skinSize)
+          .setInteractive({ useHandCursor: true });
+
+        spr.on('pointerover', function() { spr.setAlpha(0.75); });
+        spr.on('pointerout', function() { spr.setAlpha(1); });
+        spr.on('pointerdown', function() {
+          self.selectedSkin = idx;
+          self.highlightSkin();
+          window.network.emit('skin:select', { skin: idx });
+        });
+
+        self.skinSprites.push(spr);
+      })(si);
+    }
+    this.highlightSkin();
+  }
+
+  highlightSkin() {
+    this.skinHighlight.clear();
+    var spr = this.skinSprites[this.selectedSkin];
+    if (!spr) return;
+    this.skinHighlight.lineStyle(3, 0xFF85BB, 1);
+    this.skinHighlight.strokeRect(spr.x - 38, spr.y - 38, 76, 76);
+  }
+
   refreshPlayerList() {
     var data = this._lobbyData;
     if (!data) return;
@@ -192,7 +325,9 @@ class LobbyScene extends Phaser.Scene {
       var displayName = (p.id === window.network.id) ? this.playerName : p.name;
       var ready = p.ready ? ' ✓' : '';
       var me = p.id === window.network.id ? ' ← sen' : '';
-      lines.push('⚪ ' + displayName + ready + me);
+      var catBadge = { attack: '[ATK]', defence: '[DEF]', stamina: '[STA]', balance: '[BAL]' };
+      var badge = catBadge[p.category] || '[BAL]';
+      lines.push(badge + ' ' + displayName + ready + me);
     }
     var spectators = data.spectators || [];
     for (var sp = 0; sp < spectators.length; sp++) {
@@ -200,6 +335,9 @@ class LobbyScene extends Phaser.Scene {
       lines.push('👁 ' + spectators[sp].name + isMe);
     }
     if (players.length < CONSTANTS.MIN_PLAYERS) {
+      lines.push('');
+      lines.push('');
+      lines.push('');
       lines.push('');
       lines.push('min ' + CONSTANTS.MIN_PLAYERS + ' oyuncu gerekli');
     }

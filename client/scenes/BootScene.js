@@ -14,6 +14,14 @@ class BootScene extends Phaser.Scene {
     this.load.image('player', 'assets/player.png');
     this.load.image('bg', 'assets/background.jpeg');
     this.load.audio('sfx-menu', 'assets/menu-music.mp3');
+
+    var cats = ['attack', 'defence', 'stamina', 'balance'];
+    for (var ci = 0; ci < cats.length; ci++) {
+      for (var si = 0; si < 4; si++) {
+        this.load.image('char-' + cats[ci] + '-' + si,
+          'assets/characters/' + cats[ci] + '/' + si + '.png');
+      }
+    }
   }
 
   create() {

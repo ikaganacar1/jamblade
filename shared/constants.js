@@ -21,6 +21,27 @@ const CONSTANTS = {
 
   LAUNCH_TIMEOUT: 5,          // seconds before auto-launch at minimum speed
 
+  // Category physics modifiers
+  // damageOut: knockback multiplier dealt to opponent
+  // shieldIn:  knockback multiplier received
+  // spinOut:   spin damage dealt to opponent
+  // spinIn:    spin damage taken
+  // decay:     spin decay rate multiplier (lower = spins longer)
+  // speed:     max speed multiplier
+  CATEGORIES: {
+    attack:  { damageOut: 1.5, shieldIn: 0.9,  spinOut: 1.6, spinIn: 1.1,  decay: 1.0,  speed: 1.05 },
+    defence: { damageOut: 0.7, shieldIn: 0.45, spinOut: 0.7, spinIn: 0.45, decay: 1.0,  speed: 0.85 },
+    stamina: { damageOut: 0.95,shieldIn: 0.85, spinOut: 0.9, spinIn: 0.85, decay: 0.55, speed: 1.2  },
+    balance: { damageOut: 1.0, shieldIn: 1.0,  spinOut: 1.0, spinIn: 1.0,  decay: 1.0,  speed: 1.0  },
+  },
+  CATEGORY_LABELS: { attack: 'SALDIRI', defence: 'SAVUNMA', stamina: 'STAMİNA', balance: 'DENGE' },
+  CATEGORY_DESC: {
+    attack:  'Rakiplere çok güçlü çarpar — ama savunması zayıf!',
+    defence: 'Darbeleri emer, kolay yıkılmaz — ama saldırısı zayıf.',
+    stamina: 'Daha uzun döner ve daha hızlıdır.',
+    balance: 'Tüm özelliklerde dengeli performans.',
+  },
+
   PLAYER_NAMES: [
     'ÇirkinÖrdek', 'KorkakTavuk', 'NinjaKaz', 'Gurba', 'PanikTavşan',
     'ÇirkinMalKöpek', 'KırmızıBoğa', 'LogitechFare', 'LinuxPenguen', 'YürüyenUçak',

@@ -14,10 +14,12 @@ class Game {
     const spawns = generateSpawnPoints(playerIds);
 
     this.players = new Map();
-    for (const [id, { name }] of playerEntries) {
+    for (const [id, { name, category, skin }] of playerEntries) {
       const spawn = spawns[id];
       this.players.set(id, {
         name,
+        category: category || 'balance',
+        skin: skin || 0,
         x: spawn.x, y: spawn.y,
         vx: 0, vy: 0,
         joystickAngle: Math.atan2(-spawn.y, -spawn.x),
@@ -39,7 +41,7 @@ class Game {
   getFullState() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state, category: p.category, skin: p.skin };
     }
     return { players: playersData, obstacles: this.obstacles };
   }
@@ -47,7 +49,7 @@ class Game {
   start() {
     const playersData = {};
     for (const [id, p] of this.players) {
-      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state };
+      playersData[id] = { name: p.name, x: p.x, y: p.y, spinSpeed: p.spinSpeed, state: p.state, category: p.category, skin: p.skin };
     }
     this.io.emit('game:start', { players: playersData, obstacles: this.obstacles });
 
@@ -85,15 +87,17 @@ class Game {
         p.vy += Math.sin(p.joystickAngle) * C.JOYSTICK_FORCE;
       }
 
-      // Friction + speed clamp
+      // Friction + speed clamp (category modifies max speed)
       p.vx *= C.FRICTION;
       p.vy *= C.FRICTION;
+      const cat = C.CATEGORIES[p.category] || C.CATEGORIES.balance;
+      const maxSpd = C.MAX_SPEED * cat.speed;
       const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (spd > C.MAX_SPEED) { p.vx = p.vx / spd * C.MAX_SPEED; p.vy = p.vy / spd * C.MAX_SPEED; }
+      if (spd > maxSpd) { p.vx = p.vx / spd * maxSpd; p.vy = p.vy / spd * maxSpd; }
 
-      // Spin decay (active only)
+      // Spin decay (category modifies rate)
       if (p.state === 'active') {
-        p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_DECAY);
+        p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_DECAY * cat.decay);
 
         // Elimination: spin depleted → eject outward
         if (p.spinSpeed <= 0) {
@@ -154,15 +158,21 @@ class Game {
         const spinBonus = (p1.spinSpeed + p2.spinSpeed) * C.SPIN_COLLISION_FACTOR;
         const impulse = Math.max(0, relVel) * 1.4 + spinBonus;
 
-        p1.vx -= nx * impulse; p1.vy -= ny * impulse;
-        p2.vx += nx * impulse; p2.vy += ny * impulse;
+        // Category-asymmetric knockback
+        const c1 = C.CATEGORIES[p1.category] || C.CATEGORIES.balance;
+        const c2 = C.CATEGORIES[p2.category] || C.CATEGORIES.balance;
+        p1.vx -= nx * impulse * c2.damageOut * c1.shieldIn;
+        p1.vy -= ny * impulse * c2.damageOut * c1.shieldIn;
+        p2.vx += nx * impulse * c1.damageOut * c2.shieldIn;
+        p2.vy += ny * impulse * c1.damageOut * c2.shieldIn;
 
         const overlap = (minDist - dist) * 0.5;
         p1.x -= nx * overlap; p1.y -= ny * overlap;
         p2.x += nx * overlap; p2.y += ny * overlap;
 
-        p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
-        p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
+        // Category-asymmetric spin damage
+        p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS * c2.spinOut * c1.spinIn);
+        p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS * c1.spinOut * c2.spinIn);
 
         // Shake both colliding players — harder hit = bigger shake (0→0.15)
         const hitShake = Math.min(impulse / 60, 1) * 0.15;
@@ -209,7 +219,7 @@ class Game {
   broadcastState() {
     const players = {};
     for (const [id, p] of this.players) {
-      players[id] = { x: p.x, y: p.y, vx: p.vx, vy: p.vy, name: p.name, spinSpeed: p.spinSpeed, state: p.state };
+      players[id] = { x: p.x, y: p.y, vx: p.vx, vy: p.vy, name: p.name, spinSpeed: p.spinSpeed, state: p.state, category: p.category, skin: p.skin };
     }
     this.io.emit('game:state', { players, timer: this.timeRemaining });
   }

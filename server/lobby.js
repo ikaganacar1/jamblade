@@ -3,8 +3,8 @@ const C = require('../shared/constants');
 class Lobby {
   constructor(io) {
     this.io = io;
-    this.players = new Map(); // socketId -> { name, ready }
-    this.spectators = new Map(); // socketId -> { name }
+    this.players = new Map(); // socketId -> { name, ready, category, skin }
+    this.spectators = new Map();
     this.countdownTimer = null;
     this.countdownSeconds = 0;
     this.onGameStart = null;
@@ -16,7 +16,7 @@ class Lobby {
       return false;
     }
     this.spectators.delete(socket.id);
-    this.players.set(socket.id, { name, ready: false });
+    this.players.set(socket.id, { name, ready: false, category: 'balance', skin: 0 });
     this.broadcast();
     return true;
   }
@@ -41,6 +41,21 @@ class Lobby {
     const player = this.players.get(socketId);
     if (!player) return;
     player.name = name;
+    this.broadcast();
+  }
+
+  setCategory(socketId, category) {
+    const player = this.players.get(socketId);
+    if (!player || !C.CATEGORIES[category]) return;
+    player.category = category;
+    player.skin = 0;
+    this.broadcast();
+  }
+
+  setSkin(socketId, skin) {
+    const player = this.players.get(socketId);
+    if (!player) return;
+    player.skin = skin;
     this.broadcast();
   }
 
@@ -72,9 +87,7 @@ class Lobby {
       this.countdownSeconds--;
       if (this.countdownSeconds <= 0) {
         this.cancelCountdown();
-        if (this.onGameStart) {
-          this.onGameStart([...this.players.entries()]);
-        }
+        if (this.onGameStart) this.onGameStart([...this.players.entries()]);
       } else {
         this.io.emit('lobby:countdown', { seconds: this.countdownSeconds });
       }
@@ -92,17 +105,13 @@ class Lobby {
   broadcast() {
     const players = [];
     for (const [id, p] of this.players) {
-      players.push({ id, name: p.name, ready: p.ready });
+      players.push({ id, name: p.name, ready: p.ready, category: p.category, skin: p.skin });
     }
     const spectators = [];
     for (const [id, s] of this.spectators) {
       spectators.push({ id, name: s.name });
     }
     this.io.emit('lobby:update', { players, spectators });
-  }
-
-  getPlayerIds() {
-    return [...this.players.keys()];
   }
 
   clear() {

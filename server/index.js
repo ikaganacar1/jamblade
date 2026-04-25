@@ -68,6 +68,16 @@ io.on('connection', (socket) => {
     lobby.setName(socket.id, name);
   });
 
+  socket.on('category:select', ({ category }) => {
+    if (game) return;
+    lobby.setCategory(socket.id, category);
+  });
+
+  socket.on('skin:select', ({ skin }) => {
+    if (game) return;
+    lobby.setSkin(socket.id, skin);
+  });
+
   socket.on('spectate', ({ name }) => {
     if (game) {
       game.addSpectator(socket.id);

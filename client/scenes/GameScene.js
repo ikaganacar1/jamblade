@@ -274,7 +274,9 @@ class GameScene extends Phaser.Scene {
     var shadow = this.add.graphics();
     shadow.fillStyle(0x000000, 0.3);
     shadow.fillEllipse(size * 0.15, size * 0.35, size * 0.9, size * 0.28);
-    var sprite = this.add.image(0, 0, 'player').setDisplaySize(size, size);
+    var skinKey = 'char-' + data.category + '-' + data.skin;
+    var texKey = (data.category && this.textures.exists(skinKey)) ? skinKey : 'player';
+    var sprite = this.add.image(0, 0, texKey).setDisplaySize(size, size);
     var nameLabel = this.add.text(0, -(size * 0.65), data.name || '', {
       fontFamily: 'Fredoka, sans-serif',
       fontSize: Math.round(size * 0.38) + 'px',
