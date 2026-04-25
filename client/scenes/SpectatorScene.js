@@ -10,7 +10,7 @@ class SpectatorScene extends Phaser.Scene {
   create() {
     var w = this.cameras.main.width;
     var h = this.cameras.main.height;
-    var font = 'Fredoka, sans-serif';
+    var font = 'Comicbon';
     var self = this;
 
     var imgAspect = 2412 / 1760;
@@ -140,7 +140,7 @@ class SpectatorScene extends Phaser.Scene {
     var texKey = (data.category && this.textures.exists(skinKey)) ? skinKey : 'player';
     var sprite = this.add.image(0, 0, texKey).setDisplaySize(size, size);
     var nameLabel = this.add.text(0, -(size * 0.65), data.name || '', {
-      fontFamily: 'Fredoka, sans-serif',
+      fontFamily: 'Comicbon',
       fontSize: Math.round(size * 0.38) + 'px',
       color: '#ffffff', backgroundColor: '#00000099', padding: { x: 8, y: 3 },
     }).setOrigin(0.5);

@@ -10,7 +10,7 @@ class CountdownScene extends Phaser.Scene {
   create() {
     var w = this.cameras.main.width;
     var h = this.cameras.main.height;
-    var font = 'Fredoka, sans-serif';
+    var font = 'Comicbon';
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
 

@@ -10,7 +10,7 @@ class ResultScene extends Phaser.Scene {
   create() {
     var w = this.cameras.main.width;
     var h = this.cameras.main.height;
-    var font = 'Fredoka, sans-serif';
+    var font = 'Comicbon';
     var winnerName = this.resultData.winnerName || null;
     var winnerCategory = this.resultData.winnerCategory || 'balance';
     var winnerSkin = this.resultData.winnerSkin !== undefined ? this.resultData.winnerSkin : 0;

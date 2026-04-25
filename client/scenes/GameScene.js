@@ -59,7 +59,7 @@ class GameScene extends Phaser.Scene {
     this.joystick = new VirtualJoystick(this);
 
     // Timer HUD (screen space)
-    var hf = 'Fredoka, sans-serif';
+    var hf = 'Comicbon';
     this.timerText = this.add.text(10, 10, '', {
       fontFamily: hf, fontSize: '20px', color: '#FF85BB',
       backgroundColor: '#173a8bcc', padding: { x: 10, y: 5 }, fontStyle: 'bold',
@@ -256,7 +256,7 @@ class GameScene extends Phaser.Scene {
     // (actual text uses Phaser Text — update the countdown label)
     if (!this._countLabel) {
       this._countLabel = this.add.text(0, 0, '', {
-        fontFamily: 'Fredoka, sans-serif', fontSize: '120px',
+        fontFamily: 'Comicbon', fontSize: '120px',
         color: '#ffffff', fontStyle: 'bold',
         stroke: '#000000', strokeThickness: 12,
       }).setOrigin(0.5).setDepth(96);
@@ -278,7 +278,7 @@ class GameScene extends Phaser.Scene {
     var texKey = (data.category && this.textures.exists(skinKey)) ? skinKey : 'player';
     var sprite = this.add.image(0, 0, texKey).setDisplaySize(size, size);
     var nameLabel = this.add.text(0, -(size * 0.65), data.name || '', {
-      fontFamily: 'Fredoka, sans-serif',
+      fontFamily: 'Comicbon',
       fontSize: Math.round(size * 0.38) + 'px',
       color: '#ffffff', backgroundColor: '#00000099',
       padding: { x: 8, y: 3 },
