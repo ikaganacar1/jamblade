@@ -229,18 +229,29 @@ class Game {
     clearInterval(this.timerInterval);
     clearTimeout(this.launchTimer);
 
-    // If timer ran out with no explicit winner, pick highest spin player
+    let winnerCategory = 'balance', winnerSkin = 0;
+
     if (!winnerName) {
       let maxSpin = -1;
       for (const p of this.players.values()) {
         if ((p.state === 'active' || p.state === 'launching') && p.spinSpeed > maxSpin) {
           maxSpin = p.spinSpeed;
           winnerName = p.name;
+          winnerCategory = p.category || 'balance';
+          winnerSkin = p.skin || 0;
+        }
+      }
+    } else {
+      for (const p of this.players.values()) {
+        if (p.name === winnerName) {
+          winnerCategory = p.category || 'balance';
+          winnerSkin = p.skin || 0;
+          break;
         }
       }
     }
 
-    this.io.emit('game:end', { winnerName });
+    this.io.emit('game:end', { winnerName, winnerCategory, winnerSkin });
     if (this.onGameEnd) this.onGameEnd();
   }
 

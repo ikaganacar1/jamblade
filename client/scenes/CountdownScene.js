@@ -7,12 +7,6 @@ class CountdownScene extends Phaser.Scene {
     this.gameData = data;
   }
 
-  preload() {
-    if (!this.cache.audio.exists('sfx-game-start')) {
-      this.load.audio('sfx-game-start', 'assets/game-start.mp3');
-    }
-  }
-
   create() {
     var w = this.cameras.main.width;
     var h = this.cameras.main.height;
@@ -20,28 +14,29 @@ class CountdownScene extends Phaser.Scene {
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
 
-    // ── Background ───────────────────────────────────────────────
     this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
 
-    // ── Player avatar + name ──────────────────────────────────────
     if (myData) {
-      var avatar = this.add.image(w / 2, h / 2 - 16, 'player').setDisplaySize(100, 100);
+      // Show the player's selected character skin
+      var skinKey = 'char-' + myData.category + '-' + myData.skin;
+      var texKey = (myData.category && this.textures.exists(skinKey)) ? skinKey : 'player';
+      var avatar = this.add.image(w / 2, h / 2 - 16, texKey).setDisplaySize(110, 110);
       this.tweens.add({
         targets: avatar, y: avatar.y - 8,
         duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut',
       });
-      this.add.text(w / 2, h / 2 + 58, myData.name || '', {
+      this.add.text(w / 2, h / 2 + 66, myData.name || '', {
         fontFamily: font, fontSize: '20px', color: '#FF85BB',
         stroke: '#021A54', strokeThickness: 3, fontStyle: 'bold',
       }).setOrigin(0.5);
     }
 
+    // Audio preloaded in BootScene
     this.sound.play('sfx-game-start', { volume: 0.5 });
 
-    // ── Countdown numbers ─────────────────────────────────────────
     this.countdownText = this.add.text(w / 2, h - 55, '', {
-      fontFamily: 'JapanBrush', fontSize: '64px', color: '#ffffff',
-      stroke: '#021A54', strokeThickness: 5,
+      fontFamily: font, fontSize: '64px', color: '#ffffff',
+      fontStyle: 'bold', stroke: '#021A54', strokeThickness: 6,
     }).setOrigin(0.5).setAlpha(0);
 
     var self = this;
