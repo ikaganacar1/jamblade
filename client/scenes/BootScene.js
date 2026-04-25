@@ -33,7 +33,8 @@ class BootScene extends Phaser.Scene {
 
     // Force the browser to load JapanBrush before Phaser renders any text with it
     var self = this;
-    document.fonts.load('40px JapanBrush').finally(function() {
+    document.fonts.load('40px JapanBrush');
+    document.fonts.load('40px Comicbon').finally(function() {
       window.network.connect().then(function() {
         self.scene.start('Lobby');
       });

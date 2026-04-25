@@ -16,7 +16,7 @@ class LobbyScene extends Phaser.Scene {
     this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
 
     // Divider line
-    this.add.graphics().lineStyle(2, 0xFF85BB, 0.5).lineBetween(400, 0, 400, h);
+    //this.add.graphics().lineStyle(2, 0xFF85BB, 0.5).lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
     // Title hidden (logo is in the background image)
