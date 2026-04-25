@@ -10,6 +10,7 @@ class LobbyScene extends Phaser.Scene {
     var self = this;
 
     this.isSpectator = false;
+    this._lobbyData = null;
 
     // ── BACKGROUND ──────────────────────────────────────
     var bg = this.add.graphics();
@@ -66,6 +67,8 @@ class LobbyScene extends Phaser.Scene {
       self.playerName = names[Math.floor(Math.random() * names.length)];
       self.nameTag.setText(self.playerName);
       window.network.emit('name:update', { name: self.playerName });
+      // Update the player list immediately without waiting for server roundtrip
+      self.refreshPlayerList();
     });
 
     // ── READY BUTTON ────────────────────────────────────
@@ -141,26 +144,8 @@ class LobbyScene extends Phaser.Scene {
 
     // ── SOCKET EVENTS ────────────────────────────────────
     window.network.on('lobby:update', function(data) {
-      var players = data.players;
-      self.playerListTitle.setText('OYUNCULAR (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
-
-      var lines = [];
-      for (var i = 0; i < players.length; i++) {
-        var p = players[i];
-        var ready = p.ready ? ' ✓' : '';
-        var me = p.id === window.network.id ? ' ← sen' : '';
-        lines.push('⚪ ' + p.name + ready + me);
-      }
-      var spectators = data.spectators || [];
-      for (var sp = 0; sp < spectators.length; sp++) {
-        var isMe = spectators[sp].id === window.network.id ? ' ← sen' : '';
-        lines.push('👁 ' + spectators[sp].name + isMe);
-      }
-      if (players.length < CONSTANTS.MIN_PLAYERS) {
-        lines.push('');
-        lines.push('min ' + CONSTANTS.MIN_PLAYERS + ' oyuncu gerekli');
-      }
-      self.playerListText.setText(lines.join('\n'));
+      self._lobbyData = data;
+      self.refreshPlayerList();
     });
 
     window.network.on('lobby:countdown', function(data) {
@@ -197,6 +182,34 @@ class LobbyScene extends Phaser.Scene {
       window.network.off('lobby:full');
       window.network.off('lobby:gameInProgress');
     });
+  }
+
+  refreshPlayerList() {
+    var data = this._lobbyData;
+    if (!data) return;
+
+    var players = data.players;
+    this.playerListTitle.setText('OYUNCULAR (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
+
+    var lines = [];
+    for (var i = 0; i < players.length; i++) {
+      var p = players[i];
+      // If this is me, show my current local name (may differ from server until roundtrip)
+      var displayName = (p.id === window.network.id) ? this.playerName : p.name;
+      var ready = p.ready ? ' ✓' : '';
+      var me = p.id === window.network.id ? ' ← sen' : '';
+      lines.push('⚪ ' + displayName + ready + me);
+    }
+    var spectators = data.spectators || [];
+    for (var sp = 0; sp < spectators.length; sp++) {
+      var isMe = spectators[sp].id === window.network.id ? ' ← sen' : '';
+      lines.push('👁 ' + spectators[sp].name + isMe);
+    }
+    if (players.length < CONSTANTS.MIN_PLAYERS) {
+      lines.push('');
+      lines.push('min ' + CONSTANTS.MIN_PLAYERS + ' oyuncu gerekli');
+    }
+    this.playerListText.setText(lines.join('\n'));
   }
 
   showPopup(msg) {
