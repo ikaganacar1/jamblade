@@ -18,8 +18,7 @@ class GameScene extends Phaser.Scene {
     var imgAspect = mapSrc.width / mapSrc.height;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
-    // Fit to screen WIDTH so map fills edge-to-edge horizontally (crops top/bottom)
-    this._zoom = sw / displayW;
+    this._zoom = Math.min(sw / displayW, sh / displayH);
     this.cameras.main.setZoom(this._zoom);
     this.cameras.main.centerOn(0, 0);
 
@@ -310,21 +309,29 @@ class GameScene extends Phaser.Scene {
   }
 
   drawMap() {
+    // Dark fill
     var outer = this.add.graphics();
     outer.fillStyle(0x020f20, 1);
     outer.fillRect(-3000, -3000, 6000, 6000);
-    outer.setDepth(-3);
+    outer.setDepth(-4);
 
+    // Blurred wide map — scaled to fill visible world area
+    if (this.textures.exists('map-wide')) {
+      var cam = this.cameras.main;
+      var visW = cam.width / cam.zoom;
+      var visH = cam.height / cam.zoom;
+      var wideSrc = this.textures.get('map-wide').source[0];
+      var wideH = visW / (wideSrc.width / wideSrc.height);
+      this.add.image(0, 0, 'map-wide')
+        .setDisplaySize(visW, wideH)
+        .setAlpha(0.82)
+        .setDepth(-3);
+    }
+
+    // Main map (sharp, centred)
     var mapSrc = this.textures.get('map-bg').source[0];
     var displayH = CONSTANTS.WORLD_SIZE;
     var displayW = displayH * (mapSrc.width / mapSrc.height);
-    if (this.textures.exists('map-bg')) {
-      this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2);
-    } else {
-      var g = this.add.graphics();
-      g.fillStyle(0x1a3a5a, 1);
-      g.fillCircle(0, 0, 800);
-      g.setDepth(-2);
-    }
+    this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2);
   }
 }
