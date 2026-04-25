@@ -67,7 +67,7 @@ class LobbyScene extends Phaser.Scene {
     var rx = 415;
     var panelrightBg = this.add.graphics();
     panelrightBg.fillStyle(0x000000, 0.38);
-    panelrightBg.fillRoundedRect(rx, 8, 400, 330, 35);
+    panelrightBg.fillRoundedRect(rx, 8, 400, 350, 35);
 
     // ── Category buttons ─────────────────────────────────────────────
     this.add.text(500, 15, 'JamBlade Tipini Seç:', {
@@ -82,16 +82,22 @@ class LobbyScene extends Phaser.Scene {
     var catActiveColors  = { attack: 0xcc2200, defence: 0x0044bb, stamina: 0x006622, balance: 0x886600 };
     var catInactiveAlpha = 0.35;
 
-    var catBtnW = 86, catBtnH = 30, catBtnGap = 5, catBtnRadius = 14;
-    var catStartX = rx + 4;
+    var catBtnW = 130, catBtnH = 42, catBtnGap = 15, catBtnRadius = 14;
+    // 2×2 grid centred in the right panel (415-815, centre=615)
+    var catCol1 = 615 - catBtnW / 2 - catBtnGap / 2; // left column centre
+    var catCol2 = 615 + catBtnW / 2 + catBtnGap / 2; // right column centre
+    var catRow1 = 80, catRow2 = catRow1 + catBtnH + 8;
+    var catPositions = [
+      [catCol1, catRow1], [catCol2, catRow1],
+      [catCol1, catRow2], [catCol2, catRow2],
+    ];
 
     this.catBtns = {};
     for (var ci = 0; ci < catKeys.length; ci++) {
       (function(idx) {
         var ck = catKeys[idx];
-        var cx = catStartX + idx * (catBtnW + catBtnGap) + catBtnW / 2;
-        var cy = 80;
-        var btn = self._rBtn(cx, cy, catBtnW, catBtnH, catLabels[idx], font, '9px', '#ffffff', catActiveColors[ck], catBtnRadius);
+        var cx = catPositions[idx][0], cy = catPositions[idx][1];
+        var btn = self._rBtn(cx, cy, catBtnW, catBtnH, catLabels[idx], font, '20px', '#ffffff', catActiveColors[ck], catBtnRadius);
         btn.on('pointerdown', function() {
           self.selectedCategory = ck;
           self.selectedSkin = 0;
@@ -106,8 +112,8 @@ class LobbyScene extends Phaser.Scene {
     this.updateCatButtons();
 
     // ── Skin grid ─────────────────────────────────────────────────────
-    this.add.text(rx + 8, 74, 'KARAKTER SEÇ:', {
-      fontFamily: font, fontSize: '10px', color: '#c48bbe', fontStyle: 'bold',
+    this.add.text(500, 160, 'Görünümünü Seç:', {
+      fontFamily: font, fontSize: '20px', color: '#c48bbe', fontStyle: 'bold',
     });
 
     this.skinSprites = [];
@@ -288,19 +294,19 @@ class LobbyScene extends Phaser.Scene {
 
     var cat = this.selectedCategory;
     var self = this;
-    var skinSize = 70;
+    var skinSize = 65;
     var gap = 8;
 
-    // 2×2 grid centered in right panel (415-812)
-    var panelCx = 415 + (812 - 415) / 2; // 613.5
-    var col1x = panelCx - skinSize / 2 - gap / 2; // 573.5
-    var col2x = panelCx + skinSize / 2 + gap / 2;  // 653.5
-    var row1y = 122;
-    var row2y = row1y + skinSize + gap;              // 200
+    // 4-in-a-row, centred in right panel (415-815, centre=615)
+    var totalW = 4 * skinSize + 3 * gap; // 4*65 + 3*8 = 284
+    var startX = 615 - totalW / 2 + skinSize / 2;
+    var rowY = 185; // single row y-centre
 
     var positions = [
-      [col1x, row1y], [col2x, row1y],
-      [col1x, row2y], [col2x, row2y],
+      [startX,                  rowY],
+      [startX + skinSize + gap, rowY],
+      [startX + (skinSize + gap) * 2, rowY],
+      [startX + (skinSize + gap) * 3, rowY],
     ];
 
     for (var si = 0; si < 4; si++) {
@@ -329,7 +335,7 @@ class LobbyScene extends Phaser.Scene {
     var spr = this.skinSprites[this.selectedSkin];
     if (!spr) return;
     this.skinHighlight.lineStyle(3, 0xFF85BB, 1);
-    this.skinHighlight.strokeRoundedRect(spr.x - 38, spr.y - 38, 76, 76, 10);
+    this.skinHighlight.strokeRoundedRect(spr.x - 35, spr.y - 35, 70, 70, 10);
   }
 
   refreshPlayerList() {
