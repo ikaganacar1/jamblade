@@ -20,16 +20,8 @@ class CountdownScene extends Phaser.Scene {
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
 
-    // ── Background (matches lobby) ────────────────────────────────
-    var bg = this.add.graphics();
-    bg.fillGradientStyle(0x173a8b, 0x173a8b, 0xFFCEE3, 0xFFCEE3, 1);
-    bg.fillRect(0, 0, w, h);
-
-    // ── Title ─────────────────────────────────────────────────────
-    this.add.text(w / 2, 28, 'JamBlade', {
-      fontFamily: 'JapanBrush', fontSize: '42px', color: '#FF85BB',
-      stroke: '#021A54', strokeThickness: 3,
-    }).setOrigin(0.5);
+    // ── Background ───────────────────────────────────────────────
+    this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
 
     // ── Player avatar + name ──────────────────────────────────────
     if (myData) {

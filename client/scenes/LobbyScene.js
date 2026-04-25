@@ -13,19 +13,13 @@ class LobbyScene extends Phaser.Scene {
     this._lobbyData = null;
 
     // ── BACKGROUND ──────────────────────────────────────
-    var bg = this.add.graphics();
-    bg.fillGradientStyle(0x173a8b, 0x173a8b , 0xFFCEE3 ,0xFFCEE3 , 1);
-    
-    bg.fillRect(0, 0, w, h);
+    this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
 
     // Divider line
     this.add.graphics().lineStyle(2, 0xFF85BB, 0.5).lineBetween(400, 0, 400, h);
 
     // ── LEFT PANEL ──────────────────────────────────────
-    this.add.text(200, 4, 'JamBlade', {
-      fontFamily: 'JapanBrush', fontSize: '72px', color: '#FF85BB',
-      stroke: '#021A54', strokeThickness: 4,
-    }).setOrigin(0.5, 0);
+    // Title hidden (logo is in the background image)
 
     var listBg = this.add.graphics();
     listBg.fillStyle(0x000000, 0.22);
