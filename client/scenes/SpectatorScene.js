@@ -13,9 +13,9 @@ class SpectatorScene extends Phaser.Scene {
     var font = 'Comicbon';
     var self = this;
 
-    var imgAspect = 2412 / 1760;
+    var mapSrc = this.textures.get('map-bg').source[0];
     var displayH = CONSTANTS.WORLD_SIZE;
-    var displayW = displayH * imgAspect;
+    var displayW = displayH * (mapSrc.width / mapSrc.height);
     var zoom = Math.min(w / displayW, h / displayH);
     this.zoom = zoom;
 

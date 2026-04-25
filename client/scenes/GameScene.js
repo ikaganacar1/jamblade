@@ -14,7 +14,8 @@ class GameScene extends Phaser.Scene {
     var sh = this.cameras.main.height;
 
     // ── World camera (zoomed out to fit map) ──────────────────────
-    var imgAspect = 2412 / 1760;
+    var mapSrc = this.textures.get('map-bg').source[0];
+    var imgAspect = mapSrc.width / mapSrc.height;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
     this._zoom = Math.min(sw / displayW, sh / displayH);
@@ -119,7 +120,12 @@ class GameScene extends Phaser.Scene {
       this.stateTime = 0;
     }.bind(this));
 
+    // Start game background music
+    this.gameMusic = this.sound.add('sfx-game-bg', { volume: 0.35, loop: true });
+    this.gameMusic.play();
+
     window.network.on('game:end', function(data) {
+      if (this.gameMusic) this.gameMusic.stop();
       if (this.joystick) this.joystick.destroy();
       this.scene.start('Result', data);
     }.bind(this));
@@ -129,6 +135,7 @@ class GameScene extends Phaser.Scene {
     }.bind(this));
 
     this.events.once('shutdown', function() {
+      if (this.gameMusic) this.gameMusic.stop();
       window.network.off('game:state');
       window.network.off('game:end');
       if (this.inputTimer) this.inputTimer.remove();
@@ -307,9 +314,9 @@ class GameScene extends Phaser.Scene {
     outer.fillRect(-3000, -3000, 6000, 6000);
     outer.setDepth(-3);
 
-    var imgAspect = 2412 / 1760;
+    var mapSrc = this.textures.get('map-bg').source[0];
     var displayH = CONSTANTS.WORLD_SIZE;
-    var displayW = displayH * imgAspect;
+    var displayW = displayH * (mapSrc.width / mapSrc.height);
     if (this.textures.exists('map-bg')) {
       this.add.image(0, 0, 'map-bg').setDisplaySize(displayW, displayH).setDepth(-2);
     } else {
