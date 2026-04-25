@@ -16,7 +16,7 @@ class SpectatorScene extends Phaser.Scene {
     var mapSrc = this.textures.get('map-bg').source[0];
     var displayH = CONSTANTS.WORLD_SIZE;
     var displayW = displayH * (mapSrc.width / mapSrc.height);
-    var zoom = Math.min(w / displayW, h / displayH);
+    var zoom = w / displayW; // fit width, crop top/bottom
     this.zoom = zoom;
 
     var worldObjs = [];

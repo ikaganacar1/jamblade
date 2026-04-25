@@ -18,7 +18,8 @@ class GameScene extends Phaser.Scene {
     var imgAspect = mapSrc.width / mapSrc.height;
     var displayW = CONSTANTS.WORLD_SIZE * imgAspect;
     var displayH = CONSTANTS.WORLD_SIZE;
-    this._zoom = Math.min(sw / displayW, sh / displayH);
+    // Fit to screen WIDTH so map fills edge-to-edge horizontally (crops top/bottom)
+    this._zoom = sw / displayW;
     this.cameras.main.setZoom(this._zoom);
     this.cameras.main.centerOn(0, 0);
 
