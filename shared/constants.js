@@ -43,10 +43,10 @@ const CONSTANTS = {
   },
 
   PLAYER_NAMES: [
-    'ÇirkinÖrdek', 'KorkakTavuk', 'NinjaKaz', 'Gurba', 'PanikTavşan',
-    'ÇirkinMalKöpek', 'KırmızıBoğa', 'LogitechFare', 'LinuxPenguen', 'YürüyenUçak',
-    'ŞişkoAyıcık', 'ElmaKurdu', 'KayseriliPastırma', 'ÇubukTurşusu', 'AyvalıkTostu',
-    'OstimBaykuşu', 'TatlıFokçuk', 'ZıpZıpMaymun', 'PremsesKedi', 'CiciKuş',
+    'Tevret Fikfik', 'Doğan SLX', 'Garen', 'Kafakopter', 'Kötü Çocuk Sokakta',
+    'Çirkin Mal Köpek', 'Feyyaz Yiğit', 'Logitech Fare', 'Linux Penguen', 'Köylü Vampir',
+    'Gazi Rakun', 'Unityci', 'Godotçu', 'Çubuk Turşu', 'Ankara Simit',
+    'Çoko Prens', 'Peti Bör', 'Jam Yılmaz', 'Money Fest', 'Lavuk Dürüm',
   ],
 };
 

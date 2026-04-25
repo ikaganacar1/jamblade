@@ -14,7 +14,7 @@ class CountdownScene extends Phaser.Scene {
     var myId = window.network.id;
     var myData = this.gameData.players[myId];
 
-    this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
+    this.add.image(w / 2, h / 2, 'bg2').setDisplaySize(w, h);
 
     if (myData) {
       // Show the player's selected character skin

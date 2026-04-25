@@ -13,6 +13,7 @@ class BootScene extends Phaser.Scene {
     this.load.image('map-bg', 'assets/map.png');
     this.load.image('player', 'assets/player.png');
     this.load.image('bg', 'assets/background.jpeg');
+    this.load.image('bg2', 'assets/bg2.jpg');
     this.load.audio('sfx-menu', 'assets/menu-music.mp3');
     this.load.audio('sfx-game-start', 'assets/game-start.mp3');
     this.load.audio('sfx-game-win', 'assets/game-win.mp3');

@@ -17,7 +17,7 @@ class ResultScene extends Phaser.Scene {
     var iWon = winnerName === window._myName;
 
     // Background + dark overlay
-    this.add.image(w / 2, h / 2, 'bg').setDisplaySize(w, h);
+    this.add.image(w / 2, h / 2, 'bg2').setDisplaySize(w, h);
     var ov = this.add.graphics();
     ov.fillStyle(0x000000, 0.55);
     ov.fillRect(0, 0, w, h);
