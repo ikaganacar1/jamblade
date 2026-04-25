@@ -176,6 +176,14 @@ class GameScene extends Phaser.Scene {
     if (!this.latestState) return;
     var state = this.latestState;
 
+    // If server auto-launched me, clear the power bar
+    if (this.myLaunching && state.players[myId] && state.players[myId].state === 'active') {
+      this.myLaunching = false;
+      this.worldBarG.clear();
+      this.aimArrow.clear();
+      if (this._countLabel) this._countLabel.setText('');
+    }
+
     // Timer
     var min = Math.floor(state.timer / 60);
     var sec = state.timer % 60;
@@ -295,7 +303,7 @@ class GameScene extends Phaser.Scene {
 
   drawMap() {
     var outer = this.add.graphics();
-    outer.fillStyle(0x050a10, 1);
+    outer.fillStyle(0x020f20, 1);
     outer.fillRect(-3000, -3000, 6000, 6000);
     outer.setDepth(-3);
 
