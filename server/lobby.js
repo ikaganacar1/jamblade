@@ -16,7 +16,7 @@ class Lobby {
       return false;
     }
     this.spectators.delete(socket.id);
-    this.players.set(socket.id, { name, ready: false, category: 'balance', skin: 0 });
+    this.players.set(socket.id, { name, ready: false, category: null, skin: 0 });
     this.broadcast();
     return true;
   }

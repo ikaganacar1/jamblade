@@ -18,7 +18,7 @@ class LobbyScene extends Phaser.Scene {
     // ── LEFT PANEL ──────────────────────────────────────────────────
     var panelBg = this.add.graphics();
     panelBg.fillStyle(0x000000, 0.38);
-    panelBg.fillRoundedRect(8, 92, 390, 265, 35);
+    panelBg.fillRoundedRect(8, 92, 390, 275, 35);
 
     // Name section (top of left panel)
     this.add.text(60, 105, 'İsmin:', {
@@ -28,10 +28,20 @@ class LobbyScene extends Phaser.Scene {
     var names = CONSTANTS.PLAYER_NAMES;
     this.playerName = names[Math.floor(Math.random() * names.length)];
 
+    this.nameTagBg = this.add.graphics();
+
     this.nameTag = this.add.text(160, 100, this.playerName, {
       fontFamily: font, fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
-      backgroundColor: '#ffffff22', padding: { x: 10, y: 5 },
+      padding: { x: 10, y: 5 },
     }).setInteractive({ useHandCursor: true });
+
+    // Draw bg sized to match current text width
+    this._redrawNameBg = function() {
+      self.nameTagBg.clear();
+      self.nameTagBg.fillStyle(0xffffff, 0.13);
+      self.nameTagBg.fillRoundedRect(155, 97, self.nameTag.width, 36, 14);
+    };
+    this._redrawNameBg();
 
     this.add.text(120, 140, 'değiştirmek için tıkla', {
       fontFamily: font, fontSize: '15px', color: '#ffffff',
@@ -40,6 +50,7 @@ class LobbyScene extends Phaser.Scene {
     this.nameTag.on('pointerdown', function() {
       self.playerName = names[Math.floor(Math.random() * names.length)];
       self.nameTag.setText(self.playerName);
+      self._redrawNameBg();
       window.network.emit('name:update', { name: self.playerName });
       self.refreshPlayerList();
     });
@@ -67,14 +78,14 @@ class LobbyScene extends Phaser.Scene {
     var rx = 415;
     var panelrightBg = this.add.graphics();
     panelrightBg.fillStyle(0x000000, 0.38);
-    panelrightBg.fillRoundedRect(rx, 8, 400, 350, 35);
+    panelrightBg.fillRoundedRect(rx, 8, 380, 360, 35);
 
     // ── Category buttons ─────────────────────────────────────────────
     this.add.text(500, 15, 'JamBlade Tipini Seç:', {
       fontFamily: font, fontSize: '25px', color: '#c48bbe', fontStyle: 'bold',
     });
 
-    this.selectedCategory = 'balance';
+    this.selectedCategory = null;
     this.selectedSkin = 0;
 
     var catKeys   = ['attack', 'defence', 'stamina', 'balance'];
@@ -112,15 +123,15 @@ class LobbyScene extends Phaser.Scene {
     this.updateCatButtons();
 
     // ── Skin grid ─────────────────────────────────────────────────────
-    this.add.text(500, 160, 'Görünümünü Seç:', {
+    this.add.text(530, 160, 'Görünümünü Seç:', {
       fontFamily: font, fontSize: '20px', color: '#c48bbe', fontStyle: 'bold',
     });
 
     this.skinSprites = [];
     this.skinHighlight = this.add.graphics();
-    this.catDescText = this.add.text(rx + 198, 222, '', {
-      fontFamily: font, fontSize: '9px', color: '#ffccdd', align: 'center',
-      wordWrap: { width: 390 },
+    this.catDescText = this.add.text(615, 260, '', {
+      fontFamily: font, fontSize: '13px', color: '#ffccdd', align: 'center',
+      wordWrap: { width: 370 },
     }).setOrigin(0.5, 0);
 
     this.buildSkinGrid();
@@ -191,7 +202,7 @@ class LobbyScene extends Phaser.Scene {
       for (var i = 0; i < data.players.length; i++) {
         var p = data.players[i];
         if (p.id === window.network.id) {
-          if (p.category && p.category !== self.selectedCategory) {
+          if (p.category && p.category !== self.selectedCategory && self.selectedCategory !== null) {
             self.selectedCategory = p.category;
             self.selectedSkin = p.skin || 0;
             self.updateCatButtons();
@@ -272,18 +283,18 @@ class LobbyScene extends Phaser.Scene {
   }
 
   updateCatButtons() {
-    var activeColors  = { attack: 0xcc2200, defence: 0x0044bb, stamina: 0x006622, balance: 0x886600 };
+    var activeColors = { attack: 0xcc2200, defence: 0x0044bb, stamina: 0x006622, balance: 0x886600 };
     var keys = ['attack', 'defence', 'stamina', 'balance'];
     for (var i = 0; i < keys.length; i++) {
       var ck = keys[i];
       var btn = this.catBtns[ck];
       if (!btn) continue;
-      var sel = ck === this.selectedCategory;
+      var sel = this.selectedCategory && ck === this.selectedCategory;
       btn.updateBg(sel ? activeColors[ck] : 0x333333);
       btn.setTextColor(sel ? '#ffffff' : '#888888');
       btn.bg.setAlpha(sel ? 1 : 0.55);
     }
-    var desc = CONSTANTS.CATEGORY_DESC && CONSTANTS.CATEGORY_DESC[this.selectedCategory] || '';
+    var desc = (this.selectedCategory && CONSTANTS.CATEGORY_DESC && CONSTANTS.CATEGORY_DESC[this.selectedCategory]) || '';
     if (this.catDescText) this.catDescText.setText(desc);
   }
 
@@ -291,6 +302,8 @@ class LobbyScene extends Phaser.Scene {
     for (var i = 0; i < this.skinSprites.length; i++) this.skinSprites[i].destroy();
     this.skinSprites = [];
     this.skinHighlight.clear();
+
+    if (!this.selectedCategory) return; // nothing selected yet
 
     var cat = this.selectedCategory;
     var self = this;
@@ -300,7 +313,7 @@ class LobbyScene extends Phaser.Scene {
     // 4-in-a-row, centred in right panel (415-815, centre=615)
     var totalW = 4 * skinSize + 3 * gap; // 4*65 + 3*8 = 284
     var startX = 615 - totalW / 2 + skinSize / 2;
-    var rowY = 185; // single row y-centre
+    var rowY = 222; // single row y-centre, just below "Görünümünü Seç:" label
 
     var positions = [
       [startX,                  rowY],
