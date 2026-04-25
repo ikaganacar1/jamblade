@@ -183,6 +183,10 @@ class LobbyScene extends Phaser.Scene {
 
     window.network.on('lobby:gameInProgress', function() {
       self.playerListText.setText('Oyun devam ediyor, bekleyin...');
+      // Retry joining once the server clears the game
+      self.time.delayedCall(2000, function() {
+        window.network.emit('join', { name: self.playerName });
+      });
     });
 
     this.events.once('shutdown', function() {

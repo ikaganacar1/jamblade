@@ -45,7 +45,7 @@ function returnToLobby() {
 lobby.onGameStart = (playerEntries) => {
   console.log('Game starting with', playerEntries.length, 'players');
   game = new Game(io, playerEntries, () => {
-    setTimeout(returnToLobby, 5000);
+    setTimeout(returnToLobby, 3000);
   });
   game.start();
 };

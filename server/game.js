@@ -126,9 +126,10 @@ class Game {
           newY = p.y;
         }
         p.spinSpeed = Math.max(0, p.spinSpeed - C.SPIN_WALL_LOSS);
-        // Shake the player who hit the wall
-        const wallShake = (preSpeed / C.MAX_SPEED) * 0.006;
-        this.io.to(id).emit('game:shake', { duration: 160, intensity: wallShake });
+        // Shake the player who hit the wall — intensity scaled 0→0.08 by approach speed
+        const wallShake = (preSpeed / C.MAX_SPEED) * 0.08;
+        const wallSocket = this.io.sockets.sockets.get(id);
+        if (wallSocket) wallSocket.emit('game:shake', { duration: 180, intensity: wallShake });
       }
 
       p.x = newX;
@@ -163,10 +164,12 @@ class Game {
         p1.spinSpeed = Math.max(0, p1.spinSpeed - C.SPIN_COLLISION_LOSS);
         p2.spinSpeed = Math.max(0, p2.spinSpeed - C.SPIN_COLLISION_LOSS);
 
-        // Shake both colliding players — harder hit = bigger shake
-        const hitShake = Math.min(impulse / 80, 1) * 0.012;
-        this.io.to(id1).emit('game:shake', { duration: 220, intensity: hitShake });
-        this.io.to(id2).emit('game:shake', { duration: 220, intensity: hitShake });
+        // Shake both colliding players — harder hit = bigger shake (0→0.15)
+        const hitShake = Math.min(impulse / 60, 1) * 0.15;
+        [id1, id2].forEach(sid => {
+          const sock = this.io.sockets.sockets.get(sid);
+          if (sock) sock.emit('game:shake', { duration: 250, intensity: hitShake });
+        });
       }
     }
 
