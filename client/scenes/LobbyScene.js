@@ -18,23 +18,23 @@ class LobbyScene extends Phaser.Scene {
     // ── LEFT PANEL ──────────────────────────────────────────────────
     var panelBg = this.add.graphics();
     panelBg.fillStyle(0x000000, 0.38);
-    panelBg.fillRoundedRect(6, 6, 390, 357, 22);
+    panelBg.fillRoundedRect(8, 92, 390, 265, 35);
 
     // Name section (top of left panel)
-    this.add.text(18, 14, 'İsmin:', {
-      fontFamily: font, fontSize: '10px', color: '#FF85BB', fontStyle: 'bold',
+    this.add.text(60, 105, 'İsmin:', {
+      fontFamily: font, fontSize: '25px', color: '#c48bbe', fontStyle: 'bold',
     });
 
     var names = CONSTANTS.PLAYER_NAMES;
     this.playerName = names[Math.floor(Math.random() * names.length)];
 
-    this.nameTag = this.add.text(18, 28, this.playerName, {
-      fontFamily: font, fontSize: '20px', color: '#FF85BB', fontStyle: 'bold',
+    this.nameTag = this.add.text(160, 100, this.playerName, {
+      fontFamily: font, fontSize: '20px', color: '#ffffff', fontStyle: 'bold',
       backgroundColor: '#ffffff22', padding: { x: 10, y: 5 },
     }).setInteractive({ useHandCursor: true });
 
-    this.add.text(18, 62, 'değiştirmek için tıkla', {
-      fontFamily: font, fontSize: '9px', color: '#ffaabb',
+    this.add.text(120, 140, 'değiştirmek için tıkla', {
+      fontFamily: font, fontSize: '15px', color: '#ffffff',
     });
 
     this.nameTag.on('pointerdown', function() {
@@ -50,32 +50,35 @@ class LobbyScene extends Phaser.Scene {
     sep.lineBetween(18, 74, 388, 74);
 
     // Player list section
-    this.playerListTitle = this.add.text(200, 80, 'Oyuncular', {
-      fontFamily: font, fontSize: '12px', color: '#FF85BB', fontStyle: 'bold',
+    this.playerListTitle = this.add.text(200, 170, 'Oyuncular', {
+      fontFamily: font, fontSize: '27px', color: '#c48bbe', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
-    this.playerListText = this.add.text(200, 96, 'Bağlanılıyor...', {
-      fontFamily: font, fontSize: '11px', color: '#FF85BB',
+    this.playerListText = this.add.text(200, 210, 'Bağlanılıyor...', {
+      fontFamily: font, fontSize: '15px', color: '#ffffff',
       align: 'center', lineSpacing: 3,
     }).setOrigin(0.5, 0);
 
     this.countdownText = this.add.text(200, 342, '', {
-      fontFamily: font, fontSize: '14px', color: '#ffdd88', fontStyle: 'bold',
+      fontFamily: font, fontSize: '14px', color: '#ffffff', fontStyle: 'bold',
     }).setOrigin(0.5, 0);
 
     // ── RIGHT PANEL ──────────────────────────────────────────────────
     var rx = 415;
+    var panelrightBg = this.add.graphics();
+    panelrightBg.fillStyle(0x000000, 0.38);
+    panelrightBg.fillRoundedRect(rx, 8, 400, 330, 35);
 
     // ── Category buttons ─────────────────────────────────────────────
-    this.add.text(rx + 4, 6, 'TİP SEÇ:', {
-      fontFamily: font, fontSize: '10px', color: '#FF85BB', fontStyle: 'bold',
+    this.add.text(500, 15, 'JamBlade Tipini Seç:', {
+      fontFamily: font, fontSize: '25px', color: '#c48bbe', fontStyle: 'bold',
     });
 
     this.selectedCategory = 'balance';
     this.selectedSkin = 0;
 
     var catKeys   = ['attack', 'defence', 'stamina', 'balance'];
-    var catLabels = ['SALDIRI', 'SAVUNMA', 'STAMİNA', 'DENGE'];
+    var catLabels = ['Saldırı', 'Savunma', 'Stamina', 'Denge'];
     var catActiveColors  = { attack: 0xcc2200, defence: 0x0044bb, stamina: 0x006622, balance: 0x886600 };
     var catInactiveAlpha = 0.35;
 
@@ -87,7 +90,7 @@ class LobbyScene extends Phaser.Scene {
       (function(idx) {
         var ck = catKeys[idx];
         var cx = catStartX + idx * (catBtnW + catBtnGap) + catBtnW / 2;
-        var cy = 38;
+        var cy = 80;
         var btn = self._rBtn(cx, cy, catBtnW, catBtnH, catLabels[idx], font, '9px', '#ffffff', catActiveColors[ck], catBtnRadius);
         btn.on('pointerdown', function() {
           self.selectedCategory = ck;
@@ -103,8 +106,8 @@ class LobbyScene extends Phaser.Scene {
     this.updateCatButtons();
 
     // ── Skin grid ─────────────────────────────────────────────────────
-    this.add.text(rx + 4, 74, 'KARAKTER SEÇ:', {
-      fontFamily: font, fontSize: '10px', color: '#FF85BB', fontStyle: 'bold',
+    this.add.text(rx + 8, 74, 'KARAKTER SEÇ:', {
+      fontFamily: font, fontSize: '10px', color: '#c48bbe', fontStyle: 'bold',
     });
 
     this.skinSprites = [];
@@ -333,7 +336,7 @@ class LobbyScene extends Phaser.Scene {
     var data = this._lobbyData;
     if (!data) return;
     var players = data.players;
-    this.playerListTitle.setText('OYUNCULAR (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
+    this.playerListTitle.setText('Oyuncular (' + players.length + '/' + CONSTANTS.MAX_PLAYERS + ')');
     var lines = [];
     var catBadge = { attack: '[ATK]', defence: '[DEF]', stamina: '[STA]', balance: '[BAL]' };
     for (var i = 0; i < players.length; i++) {
