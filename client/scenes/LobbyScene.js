@@ -186,6 +186,12 @@ class LobbyScene extends Phaser.Scene {
       stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setDepth(501).setAlpha(0);
 
+    // ── Sponsor logo (bottom-left) ───────────────────────
+    this.add.image(10, h - 8, 'sponsor-logo')
+      .setDisplaySize(52, 52)
+      .setOrigin(0, 1)
+      .setAlpha(0.9);
+
     // ── Menu music ───────────────────────────────────────────────────
     if (!this.sound.get('sfx-menu')) {
       this.menuMusic = this.sound.add('sfx-menu', { volume: 0.3, loop: true });

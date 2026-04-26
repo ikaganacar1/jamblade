@@ -11,6 +11,7 @@ class BootScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.load.image('map-bg', 'assets/map.png');
+    this.load.image('sponsor-logo', 'assets/sponsor_logo.jpeg');
     this.load.image('map-wide', 'assets/map_wide.png');
     this.load.image('player', 'assets/player.png');
     this.load.image('bg', 'assets/background.jpeg');
