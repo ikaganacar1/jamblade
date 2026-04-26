@@ -87,7 +87,10 @@ class Lobby {
       this.countdownSeconds--;
       if (this.countdownSeconds <= 0) {
         this.cancelCountdown();
-        if (this.onGameStart) this.onGameStart([...this.players.entries()]);
+        // Re-check player count in case someone disconnected during countdown
+        if (this.players.size >= C.MIN_PLAYERS && this.onGameStart) {
+          this.onGameStart([...this.players.entries()]);
+        }
       } else {
         this.io.emit('lobby:countdown', { seconds: this.countdownSeconds });
       }

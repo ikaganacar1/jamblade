@@ -222,11 +222,15 @@ class LobbyScene extends Phaser.Scene {
     });
 
     window.network.on('game:start', function(data) {
+      if (self._startingGame) return;
+      self._startingGame = true;
       if (self.menuMusic) self.menuMusic.stop();
       self.scene.start(self.isSpectator ? 'Spectator' : 'Countdown', data);
     });
 
     window.network.on('game:spectate', function(data) {
+      if (self._startingGame) return;
+      self._startingGame = true;
       if (self.menuMusic) self.menuMusic.stop();
       self.scene.start('Spectator', data);
     });

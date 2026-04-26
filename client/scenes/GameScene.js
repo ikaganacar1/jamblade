@@ -94,6 +94,7 @@ class GameScene extends Phaser.Scene {
     this.input.on('pointerdown', function(ptr) {
       if (!self.myLaunching) return;
       if (ptr.x < sw * 0.5) return;
+      if (self.launchCountdown) { self.launchCountdown.remove(); self.launchCountdown = null; }
       window.network.emit('launch', { speed: self.barProgress, angle: self.joystick.angle });
       self.myLaunching = false;
       self.worldBarG.clear();
@@ -136,11 +137,12 @@ class GameScene extends Phaser.Scene {
 
     this.events.once('shutdown', function() {
       if (this.gameMusic) this.gameMusic.stop();
+      if (this.joystick) this.joystick.destroy();
       window.network.off('game:state');
       window.network.off('game:end');
+      window.network.off('game:shake');
       if (this.inputTimer) this.inputTimer.remove();
       if (this.launchCountdown) this.launchCountdown.remove();
-      window.network.off('game:shake');
     }, this);
   }
 

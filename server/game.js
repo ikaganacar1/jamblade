@@ -32,6 +32,7 @@ class Game {
 
     this.spectators = new Set();
     this.launchTimer = null;
+    this.gameEnded = false; // guard against double endGame()
   }
 
   addSpectator(socketId) { this.spectators.add(socketId); }
@@ -238,6 +239,8 @@ class Game {
   }
 
   endGame(winnerName = null) {
+    if (this.gameEnded) return; // prevent double-fire
+    this.gameEnded = true;
     clearInterval(this.tickTimer);
     clearInterval(this.timerInterval);
     clearTimeout(this.launchTimer);

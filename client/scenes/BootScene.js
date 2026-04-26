@@ -40,6 +40,9 @@ class BootScene extends Phaser.Scene {
     document.fonts.load('40px Comicbon').finally(function() {
       window.network.connect().then(function() {
         self.scene.start('Lobby');
+      }).catch(function(err) {
+        console.error('Connection failed:', err);
+        setTimeout(function() { location.reload(); }, 3000);
       });
     });
   }
